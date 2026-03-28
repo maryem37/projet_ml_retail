@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Churn Predictor — Retail ML</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --white:   #ffffff;
+      --bg:      #f5f4f0;
+      --card:    #ffffff;
+      --border:  #e2e0da;
+      --text:    #1a1a1a;
+      --muted:   #888580;
+      --accent:  #2c5f8a;
+      --accent2: #c0392b;
+      --green:   #27ae60;
+      --orange:  #e67e22;
+      --radius:  8px;
+      --serif:   'Lora', Georgia, serif;
+      --sans:    'Source Sans 3', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-weight: 300;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 0 40px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: -0.3px;
+    }
+
+    .logo span {
+      color: var(--muted);
+      font-weight: 400;
+      font-size: 14px;
+      margin-left: 10px;
+    }
+
+    .header-right {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.3px;
+    }
+
+    /* ── PAGE TITLE ── */
+    .page-title {
+      text-align: center;
+      padding: 48px 24px 36px;
+    }
+
+    .page-title h1 {
+      font-family: var(--serif);
+      font-size: 30px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .page-title p {
+      font-size: 15px;
+      color: var(--muted);
+    }
+
+    /* ── LAYOUT ── */
+    .layout {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 24px;
+      align-items: start;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .card-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-header h2 {
+      font-family: var(--serif);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .card-header .badge {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--bg);
+      padding: 3px 9px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+
+    /* ── FORM SECTIONS ── */
+    .form-section {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .form-section:last-of-type { border-bottom: none; }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .field-row.two   { grid-template-columns: 1fr 1fr; }
+    .field-row.four  { grid-template-columns: 1fr 1fr 1fr 1fr; }
+    .field-row:last-child { margin-bottom: 0; }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .field label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    .field input,
+    .field select {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 11px;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text);
+      background: var(--white);
+      outline: none;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: var(--accent);
+    }
+
+    /* Range field */
+    .range-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .range-row input[type="range"] {
+      flex: 1;
+      padding: 0;
+      accent-color: var(--accent);
+      border: none;
+      background: none;
+    }
+
+    .range-row input[type="range"]:focus { border: none; box-shadow: none; }
+
+    .range-val {
+      font-size: 13px;
+      color: var(--accent);
+      font-weight: 600;
+      min-width: 36px;
+      text-align: right;
+    }
+
+    /* ── SUBMIT ── */
+    .submit-wrap {
+      padding: 20px 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--accent);
+      color: var(--white);
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn:hover { background: #234e73; }
+    .btn:active { transform: scale(0.99); }
+    .btn:disabled { background: var(--muted); cursor: not-allowed; }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── RESULT CARD ── */
+    .result-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      position: sticky;
+      top: 24px;
+      overflow: hidden;
+    }
+
+    .result-placeholder {
+      padding: 48px 24px;
+      text-align: center;
+    }
+
+    .result-placeholder .icon { font-size: 36px; margin-bottom: 12px; opacity: 0.5; }
+    .result-placeholder p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* Result content */
+    .result-body { display: none; }
+
+    .result-verdict {
+      padding: 28px 24px 20px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .verdict-icon { font-size: 36px; margin-bottom: 8px; }
+
+    .verdict-name {
+      font-family: var(--serif);
+      font-size: 26px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .verdict-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+
+    /* Probability bar */
+    .prob-wrap {
+      background: var(--bg);
+      border-radius: 4px;
+      height: 8px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .prob-bar {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.8s ease;
+      width: 0%;
+    }
+
+    .prob-label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* Metrics */
+    .result-metrics {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .metric-key { color: var(--muted); }
+    .metric-value { font-weight: 600; color: var(--text); }
+
+    /* Recommendation */
+    .result-rec {
+      padding: 18px 24px;
+    }
+
+    .rec-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .rec-body {
+      font-size: 13px;
+      line-height: 1.65;
+      color: var(--text);
+    }
+
+    /* States */
+    .green  { color: var(--green); }
+    .orange { color: var(--orange); }
+    .red    { color: var(--accent2); }
+
+    .tag-green  { background: #eafaf1; color: var(--green);   border: 1px solid #a9dfbf; }
+    .tag-orange { background: #fef9e7; color: var(--orange);  border: 1px solid #f9e4b7; }
+    .tag-red    { background: #fdedec; color: var(--accent2); border: 1px solid #f5b7b1; }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      background: var(--white);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 720px) {
+      .layout { grid-template-columns: 1fr; }
+      .field-row { grid-template-columns: 1fr 1fr; }
+      .field-row.four { grid-template-columns: 1fr 1fr; }
+      .result-card { position: static; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Churn Predictor <span>GI2 · ML Workshop</span></div>
+  <div class="header-right">Random Forest · scikit-learn</div>
+</header>
+
+<div class="page-title">
+  <h1>Customer Churn Analysis</h1>
+  <p>Enter customer data below to predict churn probability and risk level.</p>
+</div>
+
+<div class="layout">
+
+  <!-- FORM -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Customer Data</h2>
+      <span class="badge">20 fields</span>
+    </div>
+
+    <!-- RFM -->
+    <div class="form-section">
+      <div class="section-label">RFM — Purchase Behaviour</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Recency (days)</label>
+          <input type="number" id="recency" value="30" min="0" max="400"/>
+        </div>
+        <div class="field">
+          <label>Frequency (orders)</label>
+          <input type="number" id="frequency" value="5" min="1" max="50"/>
+        </div>
+        <div class="field">
+          <label>Monetary Total (£)</label>
+          <input type="number" id="monetary" value="350"/>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Avg Order Value (£)</label>
+          <input type="number" id="monetary_avg" value="70"/>
+        </div>
+        <div class="field">
+          <label>Spending Category</label>
+          <select id="spending_cat">
+            <option value="0">Low</option>
+            <option value="1" selected>Medium</option>
+            <option value="2">High</option>
+            <option value="3">VIP</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Customer Tenure (days)</label>
+          <input type="number" id="tenure" value="365" min="0" max="730"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- BEHAVIOUR -->
+    <div class="form-section">
+      <div class="section-label">Behaviour & Engagement</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Total Quantity</label>
+          <input type="number" id="total_quantity" value="50"/>
+        </div>
+        <div class="field">
+          <label>Unique Products</label>
+          <input type="number" id="unique_products" value="10"/>
+        </div>
+        <div class="field">
+          <label>Cancelled Transactions</label>
+          <input type="number" id="cancelled" value="0" min="0"/>
+        </div>
+      </div>
+      <div class="field-row two">
+        <div class="field">
+          <label>Return Ratio</label>
+          <div class="range-row">
+            <input type="range" id="return_ratio" min="0" max="1" step="0.01" value="0"
+              oninput="document.getElementById('rr_val').textContent=(+this.value*100).toFixed(0)+'%'"/>
+            <span class="range-val" id="rr_val">0%</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Satisfaction (0–5)</label>
+          <div class="range-row">
+            <input type="range" id="satisfaction" min="0" max="5" step="0.5" value="3.5"
+              oninput="document.getElementById('sat_val').textContent=this.value"/>
+            <span class="range-val" id="sat_val">3.5</span>
+          </div>
+        </div>
+      </div>
+      <div class="field-row two">
+        <div class="field">
+          <label>Avg Days Between Purchases</label>
+          <input type="number" id="avg_days_between" value="30" min="0" max="365"/>
+        </div>
+        <div class="field">
+          <label>Support Tickets</label>
+          <input type="number" id="support_tickets" value="0" min="0" max="15"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="form-section">
+      <div class="section-label">Customer Profile</div>
+      <div class="field-row four">
+        <div class="field">
+          <label>Age</label>
+          <input type="number" id="age" value="35" min="18" max="81"/>
+        </div>
+        <div class="field">
+          <label>Gender</label>
+          <select id="gender">
+            <option value="M">Male</option>
+            <option value="F">Female</option>
+            <option value="Unknown">Unknown</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Customer Type</label>
+          <select id="customer_type">
+            <option value="Hyperactif">Hyperactif</option>
+            <option value="Régulier" selected>Régulier</option>
+            <option value="Occasionnel">Occasionnel</option>
+            <option value="Nouveau">Nouveau</option>
+            <option value="Perdu">Perdu</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Account Status</label>
+          <select id="account_status">
+            <option value="Active" selected>Active</option>
+            <option value="Suspended">Suspended</option>
+            <option value="Pending">Pending</option>
+            <option value="Closed">Closed</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row four">
+        <div class="field">
+          <label>Favorite Season</label>
+          <select id="season">
+            <option value="Hiver" selected>Winter</option>
+            <option value="Printemps">Spring</option>
+            <option value="Été">Summer</option>
+            <option value="Automne">Autumn</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Region</label>
+          <select id="region">
+            <option value="UK" selected>UK</option>
+            <option value="Europe_N">Europe N</option>
+            <option value="Europe_S">Europe S</option>
+            <option value="Europe_E">Europe E</option>
+            <option value="Europe_C">Europe C</option>
+            <option value="Asia">Asia</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Product Diversity</label>
+          <select id="prod_diversity">
+            <option value="Spécialisé">Spécialisé</option>
+            <option value="Modéré" selected>Modéré</option>
+            <option value="Explorateur">Explorateur</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Weekend Preference</label>
+          <select id="weekend_pref">
+            <option value="Semaine" selected>Weekday</option>
+            <option value="Weekend">Weekend</option>
+            <option value="Inconnu">Unknown</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="submit-wrap">
+      <button class="btn" onclick="runPrediction()" id="predict-btn">
+        <span id="btn-text">Predict Churn</span>
+        <div class="spinner" id="spinner"></div>
+      </button>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="result-card">
+    <div class="card-header">
+      <h2>Result</h2>
+    </div>
+
+    <div class="result-placeholder" id="result-placeholder">
+      <div class="icon">📊</div>
+      <p>Fill in the form and click<br/><strong>Predict Churn</strong> to see<br/>the analysis result.</p>
+    </div>
+
+    <div class="result-body" id="result-body">
+
+      <div class="result-verdict">
+        <div class="verdict-icon" id="verdict-icon">—</div>
+        <div class="verdict-name" id="verdict-name">—</div>
+        <div class="verdict-tag" id="verdict-tag">—</div>
+        <div class="prob-wrap">
+          <div class="prob-bar" id="prob-bar"></div>
+        </div>
+        <div class="prob-label" id="prob-label">—</div>
+      </div>
+
+      <div class="result-metrics">
+        <div class="metric">
+          <span class="metric-key">Churn Probability</span>
+          <span class="metric-value" id="m-prob">—</span>
+        </div>
+        <div class="metric">
+          <span class="metric-key">Retention Chance</span>
+          <span class="metric-value" id="m-ret">—</span>
+        </div>
+        <div class="metric">
+          <span class="metric-key">Risk Level</span>
+          <span class="metric-value" id="m-risk">—</span>
+        </div>
+        <div class="metric">
+          <span class="metric-key">Prediction</span>
+          <span class="metric-value" id="m-pred">—</span>
+        </div>
+      </div>
+
+      <div class="result-rec">
+        <div class="rec-label">Recommended Action</div>
+        <div class="rec-body" id="rec-body">—</div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Churn Predictor · GI2 Machine Learning Workshop · Flask + scikit-learn
+</footer>
+
+<script>
+  async function runPrediction() {
+    const btn     = document.getElementById('predict-btn');
+    const btnText = document.getElementById('btn-text');
+    const spinner = document.getElementById('spinner');
+
+    btn.disabled          = true;
+    btnText.style.display = 'none';
+    spinner.style.display = 'block';
+
+    const payload = {
+      recency          : +document.getElementById('recency').value,
+      frequency        : +document.getElementById('frequency').value,
+      monetary         : +document.getElementById('monetary').value,
+      monetary_avg     : +document.getElementById('monetary_avg').value,
+      monetary_std     : 20,
+      monetary_min     : 0,
+      monetary_max     : +document.getElementById('monetary_avg').value * 2,
+      total_quantity   : +document.getElementById('total_quantity').value,
+      avg_qty          : 5,
+      min_qty          : 1,
+      max_qty          : 50,
+      tenure           : +document.getElementById('tenure').value,
+      first_purchase   : +document.getElementById('tenure').value + 30,
+      preferred_day    : 2,
+      preferred_hour   : 14,
+      preferred_month  : 6,
+      weekend_ratio    : 0.3,
+      avg_days_between : +document.getElementById('avg_days_between').value,
+      unique_products  : +document.getElementById('unique_products').value,
+      avg_products     : 2,
+      unique_countries : 1,
+      cancelled        : +document.getElementById('cancelled').value,
+      return_ratio     : +document.getElementById('return_ratio').value,
+      total_lines      : 60,
+      avg_lines        : 8,
+      age              : +document.getElementById('age').value,
+      support_tickets  : +document.getElementById('support_tickets').value,
+      satisfaction     : +document.getElementById('satisfaction').value,
+      spending_cat     : +document.getElementById('spending_cat').value,
+      age_cat          : 2,
+      basket_size      : 1,
+      preferred_time   : 3,
+      customer_type    : document.getElementById('customer_type').value,
+      season           : document.getElementById('season').value,
+      region           : document.getElementById('region').value,
+      weekend_pref     : document.getElementById('weekend_pref').value,
+      prod_diversity   : document.getElementById('prod_diversity').value,
+      gender           : document.getElementById('gender').value,
+      account_status   : document.getElementById('account_status').value,
+      country          : 'United Kingdom',
+    };
+
+    try {
+      const res  = await fetch('/predict', {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) showResult(data.result);
+      else alert('Error: ' + data.error);
+    } catch(e) {
+      alert('Connection error: ' + e.message);
+    } finally {
+      btn.disabled          = false;
+      btnText.style.display = 'inline';
+      spinner.style.display = 'none';
+    }
+  }
+
+  function showResult(r) {
+    document.getElementById('result-placeholder').style.display = 'none';
+    document.getElementById('result-body').style.display        = 'block';
+
+    const prob = r.probability;
+    const ret  = +(100 - prob).toFixed(1);
+    const isChurn = r.prediction === 1;
+
+    // Color class
+    const cls = {
+      'Faible'  : { text: 'green',  tag: 'tag-green',  bar: '#27ae60', icon: '✅' },
+      'Moyen'   : { text: 'orange', tag: 'tag-orange', bar: '#e67e22', icon: '⚠️' },
+      'Élevé'   : { text: 'red',    tag: 'tag-red',    bar: '#c0392b', icon: '🚨' },
+      'Critique': { text: 'red',    tag: 'tag-red',    bar: '#922b21', icon: '🔴' },
+    }[r.risk_level] || { text: 'green', tag: 'tag-green', bar: '#27ae60', icon: '✅' };
+
+    document.getElementById('verdict-icon').textContent     = cls.icon;
+    document.getElementById('verdict-name').textContent     = r.label;
+    document.getElementById('verdict-name').className       = 'verdict-name ' + cls.text;
+
+    const tag = document.getElementById('verdict-tag');
+    tag.textContent = r.risk_level + ' Risk';
+    tag.className   = 'verdict-tag ' + cls.tag;
+
+    // Probability bar
+    const bar = document.getElementById('prob-bar');
+    bar.style.background = cls.bar;
+    setTimeout(() => { bar.style.width = prob + '%'; }, 80);
+
+    document.getElementById('prob-label').textContent = prob + '% churn probability';
+
+    // Metrics
+    document.getElementById('m-prob').textContent = prob + '%';
+    document.getElementById('m-prob').className   = 'metric-value ' + cls.text;
+    document.getElementById('m-ret').textContent  = ret + '%';
+    document.getElementById('m-risk').textContent = r.risk_level;
+    document.getElementById('m-risk').className   = 'metric-value ' + cls.text;
+    document.getElementById('m-pred').textContent = isChurn ? 'Will Churn' : 'Will Stay';
+    document.getElementById('m-pred').className   = 'metric-value ' + cls.text;
+
+    // Recommendation
+    const recs = {
+      'Faible'  : 'This customer is stable. Consider offering a loyalty reward or upsell to a premium tier to maximise their lifetime value.',
+      'Moyen'   : 'Monitor this customer. Send a personalised offer or re-engagement email to strengthen the relationship.',
+      'Élevé'   : 'High churn risk. Launch a retention campaign immediately — a targeted discount or personal outreach is recommended.',
+      'Critique': 'Critical risk. This customer is likely disengaged. Assign priority support and make direct personal contact with a strong incentive.',
+    };
+    document.getElementById('rec-body').textContent = recs[r.risk_level];
+  }
+</script>
+</body>
+</html>
