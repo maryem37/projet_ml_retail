@@ -32,7 +32,6 @@
       min-height: 100vh;
     }
 
-    /* ── HEADER ── */
     header {
       background: var(--white);
       border-bottom: 1px solid var(--border);
@@ -48,7 +47,6 @@
       font-size: 18px;
       font-weight: 600;
       color: var(--accent);
-      letter-spacing: -0.3px;
     }
 
     .logo span {
@@ -58,13 +56,8 @@
       margin-left: 10px;
     }
 
-    .header-right {
-      font-size: 12px;
-      color: var(--muted);
-      letter-spacing: 0.3px;
-    }
+    .header-right { font-size: 12px; color: var(--muted); }
 
-    /* ── PAGE TITLE ── */
     .page-title {
       text-align: center;
       padding: 48px 24px 36px;
@@ -74,16 +67,11 @@
       font-family: var(--serif);
       font-size: 30px;
       font-weight: 600;
-      color: var(--text);
       margin-bottom: 8px;
     }
 
-    .page-title p {
-      font-size: 15px;
-      color: var(--muted);
-    }
+    .page-title p { font-size: 15px; color: var(--muted); }
 
-    /* ── LAYOUT ── */
     .layout {
       max-width: 960px;
       margin: 0 auto;
@@ -94,7 +82,6 @@
       align-items: start;
     }
 
-    /* ── CARD ── */
     .card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -113,7 +100,6 @@
       font-family: var(--serif);
       font-size: 15px;
       font-weight: 600;
-      color: var(--text);
     }
 
     .card-header .badge {
@@ -126,13 +112,10 @@
       border: 1px solid var(--border);
     }
 
-    /* ── FORM SECTIONS ── */
     .form-section {
       padding: 20px 24px;
       border-bottom: 1px solid var(--border);
     }
-
-    .form-section:last-of-type { border-bottom: none; }
 
     .section-label {
       font-size: 11px;
@@ -150,30 +133,20 @@
       margin-bottom: 14px;
     }
 
-    .field-row.two   { grid-template-columns: 1fr 1fr; }
-    .field-row.four  { grid-template-columns: 1fr 1fr 1fr 1fr; }
+    .field-row.two  { grid-template-columns: 1fr 1fr; }
+    .field-row.four { grid-template-columns: 1fr 1fr 1fr 1fr; }
     .field-row:last-child { margin-bottom: 0; }
 
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
+    .field { display: flex; flex-direction: column; gap: 5px; }
 
-    .field label {
-      font-size: 12px;
-      color: var(--muted);
-      font-weight: 400;
-    }
+    .field label { font-size: 12px; color: var(--muted); }
 
-    .field input,
-    .field select {
+    .field input, .field select {
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 8px 11px;
       font-family: var(--sans);
       font-size: 13px;
-      font-weight: 400;
       color: var(--text);
       background: var(--white);
       outline: none;
@@ -181,63 +154,33 @@
       width: 100%;
     }
 
-    .field input:focus,
-    .field select:focus {
-      border-color: var(--accent);
-    }
+    .field input:focus, .field select:focus { border-color: var(--accent); }
 
-    /* Range field */
-    .range-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .range-row { display: flex; align-items: center; gap: 10px; }
 
     .range-row input[type="range"] {
-      flex: 1;
-      padding: 0;
+      flex: 1; padding: 0;
       accent-color: var(--accent);
-      border: none;
-      background: none;
+      border: none; background: none;
     }
-
-    .range-row input[type="range"]:focus { border: none; box-shadow: none; }
 
     .range-val {
-      font-size: 13px;
-      color: var(--accent);
-      font-weight: 600;
-      min-width: 36px;
-      text-align: right;
+      font-size: 13px; color: var(--accent);
+      font-weight: 600; min-width: 36px; text-align: right;
     }
 
-    /* ── SUBMIT ── */
-    .submit-wrap {
-      padding: 20px 24px;
-      border-top: 1px solid var(--border);
-    }
+    .submit-wrap { padding: 20px 24px; border-top: 1px solid var(--border); }
 
     .btn {
-      width: 100%;
-      padding: 12px;
-      background: var(--accent);
-      color: var(--white);
-      font-family: var(--sans);
-      font-size: 14px;
-      font-weight: 600;
-      letter-spacing: 0.3px;
-      border: none;
-      border-radius: var(--radius);
-      cursor: pointer;
-      transition: background 0.15s, transform 0.1s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      width: 100%; padding: 12px;
+      background: var(--accent); color: var(--white);
+      font-family: var(--sans); font-size: 14px; font-weight: 600;
+      border: none; border-radius: var(--radius);
+      cursor: pointer; transition: background 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
     }
 
     .btn:hover { background: #234e73; }
-    .btn:active { transform: scale(0.99); }
     .btn:disabled { background: var(--muted); cursor: not-allowed; }
 
     .spinner {
@@ -248,9 +191,10 @@
       animation: spin 0.6s linear infinite;
       display: none;
     }
+
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── RESULT CARD ── */
+    /* RESULT CARD */
     .result-card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -268,7 +212,6 @@
     .result-placeholder .icon { font-size: 36px; margin-bottom: 12px; opacity: 0.5; }
     .result-placeholder p { font-size: 13px; color: var(--muted); line-height: 1.6; }
 
-    /* Result content */
     .result-body { display: none; }
 
     .result-verdict {
@@ -297,7 +240,6 @@
       margin-bottom: 16px;
     }
 
-    /* Probability bar */
     .prob-wrap {
       background: var(--bg);
       border-radius: 4px;
@@ -313,12 +255,34 @@
       width: 0%;
     }
 
-    .prob-label {
-      font-size: 12px;
-      color: var(--muted);
+    .prob-label { font-size: 12px; color: var(--muted); }
+
+    /* CLUSTER BADGE */
+    .cluster-badge {
+      margin: 14px 24px 0;
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg);
+      display: none;
     }
 
-    /* Metrics */
+    .cluster-badge-inner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .cluster-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .cluster-text { font-size: 13px; }
+    .cluster-text strong { font-weight: 600; }
+    .cluster-text small { font-size: 11px; color: var(--muted); display: block; }
+
     .result-metrics {
       padding: 18px 24px;
       border-bottom: 1px solid var(--border);
@@ -327,37 +291,18 @@
       gap: 12px;
     }
 
-    .metric {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 13px;
-    }
-
+    .metric { display: flex; justify-content: space-between; font-size: 13px; }
     .metric-key { color: var(--muted); }
-    .metric-value { font-weight: 600; color: var(--text); }
+    .metric-value { font-weight: 600; }
 
-    /* Recommendation */
-    .result-rec {
-      padding: 18px 24px;
-    }
-
+    .result-rec { padding: 18px 24px; }
     .rec-label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 8px;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 1px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 8px;
     }
+    .rec-body { font-size: 13px; line-height: 1.65; }
 
-    .rec-body {
-      font-size: 13px;
-      line-height: 1.65;
-      color: var(--text);
-    }
-
-    /* States */
     .green  { color: var(--green); }
     .orange { color: var(--orange); }
     .red    { color: var(--accent2); }
@@ -366,17 +311,13 @@
     .tag-orange { background: #fef9e7; color: var(--orange);  border: 1px solid #f9e4b7; }
     .tag-red    { background: #fdedec; color: var(--accent2); border: 1px solid #f5b7b1; }
 
-    /* ── FOOTER ── */
     footer {
-      text-align: center;
-      padding: 20px;
-      font-size: 12px;
-      color: var(--muted);
+      text-align: center; padding: 20px;
+      font-size: 12px; color: var(--muted);
       border-top: 1px solid var(--border);
       background: var(--white);
     }
 
-    /* ── RESPONSIVE ── */
     @media (max-width: 720px) {
       .layout { grid-template-columns: 1fr; }
       .field-row { grid-template-columns: 1fr 1fr; }
@@ -389,12 +330,12 @@
 
 <header>
   <div class="logo">Churn Predictor <span>GI2 · ML Workshop</span></div>
-  <div class="header-right">Random Forest · scikit-learn</div>
+  <div class="header-right">Random Forest · K-Means · scikit-learn</div>
 </header>
 
 <div class="page-title">
   <h1>Customer Churn Analysis</h1>
-  <p>Enter customer data below to predict churn probability and risk level.</p>
+  <p>Enter customer data to predict churn probability, risk level, and customer segment.</p>
 </div>
 
 <div class="layout">
@@ -599,6 +540,17 @@
         <div class="prob-label" id="prob-label">—</div>
       </div>
 
+      <!-- CLUSTER BADGE -->
+      <div class="cluster-badge" id="cluster-badge">
+        <div class="cluster-badge-inner">
+          <div class="cluster-dot" id="cluster-dot"></div>
+          <div class="cluster-text">
+            <strong id="cluster-name">—</strong>
+            <small>Customer Segment (K-Means)</small>
+          </div>
+        </div>
+      </div>
+
       <div class="result-metrics">
         <div class="metric">
           <span class="metric-key">Churn Probability</span>
@@ -651,30 +603,22 @@
       monetary_min     : 0,
       monetary_max     : +document.getElementById('monetary_avg').value * 2,
       total_quantity   : +document.getElementById('total_quantity').value,
-      avg_qty          : 5,
-      min_qty          : 1,
-      max_qty          : 50,
+      avg_qty          : 5, min_qty: 1, max_qty: 50,
       tenure           : +document.getElementById('tenure').value,
       first_purchase   : +document.getElementById('tenure').value + 30,
-      preferred_day    : 2,
-      preferred_hour   : 14,
-      preferred_month  : 6,
+      preferred_day    : 2, preferred_hour: 14, preferred_month: 6,
       weekend_ratio    : 0.3,
       avg_days_between : +document.getElementById('avg_days_between').value,
       unique_products  : +document.getElementById('unique_products').value,
-      avg_products     : 2,
-      unique_countries : 1,
+      avg_products     : 2, unique_countries: 1,
       cancelled        : +document.getElementById('cancelled').value,
       return_ratio     : +document.getElementById('return_ratio').value,
-      total_lines      : 60,
-      avg_lines        : 8,
+      total_lines      : 60, avg_lines: 8,
       age              : +document.getElementById('age').value,
       support_tickets  : +document.getElementById('support_tickets').value,
       satisfaction     : +document.getElementById('satisfaction').value,
       spending_cat     : +document.getElementById('spending_cat').value,
-      age_cat          : 2,
-      basket_size      : 1,
-      preferred_time   : 3,
+      age_cat: 2, basket_size: 1, preferred_time: 3,
       customer_type    : document.getElementById('customer_type').value,
       season           : document.getElementById('season').value,
       region           : document.getElementById('region').value,
@@ -687,9 +631,9 @@
 
     try {
       const res  = await fetch('/predict', {
-        method : 'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify(payload)
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (data.success) showResult(data.result);
@@ -709,9 +653,7 @@
 
     const prob = r.probability;
     const ret  = +(100 - prob).toFixed(1);
-    const isChurn = r.prediction === 1;
 
-    // Color class
     const cls = {
       'Faible'  : { text: 'green',  tag: 'tag-green',  bar: '#27ae60', icon: '✅' },
       'Moyen'   : { text: 'orange', tag: 'tag-orange', bar: '#e67e22', icon: '⚠️' },
@@ -719,31 +661,36 @@
       'Critique': { text: 'red',    tag: 'tag-red',    bar: '#922b21', icon: '🔴' },
     }[r.risk_level] || { text: 'green', tag: 'tag-green', bar: '#27ae60', icon: '✅' };
 
-    document.getElementById('verdict-icon').textContent     = cls.icon;
-    document.getElementById('verdict-name').textContent     = r.label;
-    document.getElementById('verdict-name').className       = 'verdict-name ' + cls.text;
+    document.getElementById('verdict-icon').textContent = cls.icon;
+    document.getElementById('verdict-name').textContent = r.label;
+    document.getElementById('verdict-name').className   = 'verdict-name ' + cls.text;
 
     const tag = document.getElementById('verdict-tag');
     tag.textContent = r.risk_level + ' Risk';
     tag.className   = 'verdict-tag ' + cls.tag;
 
-    // Probability bar
     const bar = document.getElementById('prob-bar');
     bar.style.background = cls.bar;
     setTimeout(() => { bar.style.width = prob + '%'; }, 80);
-
     document.getElementById('prob-label').textContent = prob + '% churn probability';
 
-    // Metrics
     document.getElementById('m-prob').textContent = prob + '%';
     document.getElementById('m-prob').className   = 'metric-value ' + cls.text;
     document.getElementById('m-ret').textContent  = ret + '%';
     document.getElementById('m-risk').textContent = r.risk_level;
     document.getElementById('m-risk').className   = 'metric-value ' + cls.text;
-    document.getElementById('m-pred').textContent = isChurn ? 'Will Churn' : 'Will Stay';
+    document.getElementById('m-pred').textContent = r.prediction === 1 ? 'Will Churn' : 'Will Stay';
     document.getElementById('m-pred').className   = 'metric-value ' + cls.text;
 
-    // Recommendation
+    // Cluster badge
+    if (r.cluster_label) {
+      const badge = document.getElementById('cluster-badge');
+      badge.style.display = 'block';
+      document.getElementById('cluster-dot').style.background = r.cluster_color;
+      document.getElementById('cluster-name').textContent =
+        r.cluster_emoji + '  Cluster ' + r.cluster_id + ' — ' + r.cluster_label;
+    }
+
     const recs = {
       'Faible'  : 'This customer is stable. Consider offering a loyalty reward or upsell to a premium tier to maximise their lifetime value.',
       'Moyen'   : 'Monitor this customer. Send a personalised offer or re-engagement email to strengthen the relationship.',

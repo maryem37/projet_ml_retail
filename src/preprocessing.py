@@ -26,18 +26,18 @@ print(f"  Raw shape : {df.shape}")
 print("Dropping redundant / useless / leaky columns...")
 
 columns_to_drop = [
-    "NewsletterSubscribed",      # Constant feature
-    "UniqueInvoices",            # Perfect correlation
-    "TotalTransactions",         # Perfect correlation
+    "NewsletterSubscribed",      # Constant feature (variance = 0)
+    "UniqueInvoices",            # Perfect correlation with TotalTransactions
+    "TotalTransactions",         # Perfect correlation with UniqueInvoices
     "UniqueDescriptions",        # Redundant with UniqueProducts
     "NegativeQuantityCount",     # Redundant with CancelledTransactions
-    "RegistrationDate",          # High cardinality / raw date
-    "LastLoginIP",               # High cardinality
-    "CustomerID",                # ID column
+    "RegistrationDate",          # Raw date → parsed into features below
+    "LastLoginIP",               # High cardinality / not useful
+    "CustomerID",                # ID column — not a feature
     # --- Leaky columns (derived from Churn target) ---
     "ChurnRiskCategory",         # Directly encodes churn risk → leakage
-    "RFMSegment",                # Built from RFM, correlates perfectly → leakage
-    "LoyaltyLevel",              # May encode churn indirectly → leakage
+    "RFMSegment",                # Built from RFM → leakage
+    "LoyaltyLevel",              # Encodes churn indirectly → leakage
 ]
 
 df = df.drop(columns=columns_to_drop, errors="ignore")
@@ -50,29 +50,65 @@ print(f"  Shape after drops : {df.shape}")
 
 print("Handling missing values...")
 
-# ---- AGE (30% missing) ----
+# AGE (30% missing) → flag + impute with median
 if "Age" in df.columns:
     df["Age_IsMissing"] = df["Age"].isna().astype(int)
-    age_median = df["Age"].median()
-    df["Age"] = df["Age"].fillna(age_median)
+    df["Age"]           = df["Age"].fillna(df["Age"].median())
 
-# ---- AvgDaysBetweenPurchases (One-timers have NaN) ----
+# AvgDaysBetweenPurchases → 0 for one-time buyers
 if "AvgDaysBetweenPurchases" in df.columns:
     df["AvgDaysBetweenPurchases"] = df["AvgDaysBetweenPurchases"].fillna(0)
 
-# ---- SupportTickets: aberrant values (-1, 999) → NaN → median ----
+# SupportTickets → aberrant values (-1, 999) → median
 if "SupportTickets" in df.columns:
     df["SupportTickets"] = df["SupportTickets"].replace([-1, 999], np.nan)
     df["SupportTickets"] = df["SupportTickets"].fillna(df["SupportTickets"].median())
 
-# ---- Satisfaction: aberrant values (-1, 99) → NaN → median ----
+# Satisfaction → aberrant values (-1, 99) → median
 if "Satisfaction" in df.columns:
     df["Satisfaction"] = df["Satisfaction"].replace([-1, 99], np.nan)
     df["Satisfaction"] = df["Satisfaction"].fillna(df["Satisfaction"].median())
 
 
 # ==========================================
-# 4️⃣ LOG TRANSFORMATIONS (Reduce Skewness)
+# 4️⃣ FEATURE ENGINEERING  ← NEW SECTION
+# ==========================================
+# Create new features from existing ones to
+# capture richer patterns for the model.
+# ==========================================
+
+print("Engineering new features...")
+
+# --- Spend per day (recency-adjusted activity) ---
+if "MonetaryTotal" in df.columns and "Recency" in df.columns:
+    df["MonetaryPerDay"] = df["MonetaryTotal"] / (df["Recency"] + 1)
+
+# --- Average basket value ---
+if "MonetaryTotal" in df.columns and "Frequency" in df.columns:
+    df["AvgBasketValue"] = df["MonetaryTotal"] / (df["Frequency"] + 1)
+
+# --- Recency vs tenure ratio (how recently active vs total lifespan) ---
+if "Recency" in df.columns and "CustomerTenureDays" in df.columns:
+    df["TenureRatio"] = df["Recency"] / (df["CustomerTenureDays"] + 1)
+
+# --- Engagement score (frequency / tenure) ---
+if "Frequency" in df.columns and "CustomerTenureDays" in df.columns:
+    df["EngagementScore"] = df["Frequency"] / (df["CustomerTenureDays"] + 1)
+
+# --- Return rate vs cancellation ---
+if "ReturnRatio" in df.columns and "CancelledTransactions" in df.columns:
+    df["DisengagementScore"] = df["ReturnRatio"] + (df["CancelledTransactions"] / 10)
+
+# --- Revenue concentration (how VIP is this customer vs average) ---
+if "MonetaryTotal" in df.columns:
+    global_mean = df["MonetaryTotal"].mean()
+    df["RevenueIndex"] = df["MonetaryTotal"] / (global_mean + 1)
+
+print(f"  Shape after feature engineering : {df.shape}")
+
+
+# ==========================================
+# 5️⃣ LOG TRANSFORMATIONS (Reduce Skewness)
 # ==========================================
 
 print("Applying log transformations...")
@@ -87,38 +123,43 @@ if "Frequency" in df.columns:
 if "TotalQuantity" in df.columns:
     df["TotalQuantity"] = np.sign(df["TotalQuantity"]) * np.log1p(np.abs(df["TotalQuantity"]))
 
+# Also log-transform new engineered features if skewed
+if "MonetaryPerDay" in df.columns:
+    df["MonetaryPerDay"] = np.sign(df["MonetaryPerDay"]) * np.log1p(np.abs(df["MonetaryPerDay"]))
+
+if "AvgBasketValue" in df.columns:
+    df["AvgBasketValue"] = np.sign(df["AvgBasketValue"]) * np.log1p(np.abs(df["AvgBasketValue"]))
+
 
 # ==========================================
-# 5️⃣ ORDINAL ENCODING
+# 6️⃣ ORDINAL ENCODING
 # ==========================================
 
 print("Applying ordinal encoding...")
 
 if "SpendingCategory" in df.columns:
-    spending_map = {"Low": 0, "Medium": 1, "High": 2, "VIP": 3}
-    df["SpendingCategory"] = df["SpendingCategory"].map(spending_map)
+    df["SpendingCategory"] = df["SpendingCategory"].map(
+        {"Low": 0, "Medium": 1, "High": 2, "VIP": 3}
+    )
 
 if "AgeCategory" in df.columns:
-    age_cat_map = {
-        "18-24": 0, "25-34": 1, "35-44": 2,
-        "45-54": 3, "55-64": 4, "65+": 5, "Inconnu": 6
-    }
-    df["AgeCategory"] = df["AgeCategory"].map(age_cat_map)
+    df["AgeCategory"] = df["AgeCategory"].map(
+        {"18-24": 0, "25-34": 1, "35-44": 2, "45-54": 3, "55-64": 4, "65+": 5, "Inconnu": 6}
+    )
 
-if "BasketSize" in df.columns:
-    basket_map = {"Petit": 0, "Moyen": 1, "Grand": 2, "Inconnu": 3}
-    df["BasketSize"] = df["BasketSize"].map(basket_map)
+if "BasketSizeCategory" in df.columns:
+    df["BasketSizeCategory"] = df["BasketSizeCategory"].map(
+        {"Petit": 0, "Moyen": 1, "Grand": 2, "Inconnu": 3}
+    )
 
-if "PreferredTime" in df.columns:
-    time_map = {
-        "Nuit": 0, "Matin": 1, "Midi": 2,
-        "Après-midi": 3, "Soir": 4
-    }
-    df["PreferredTime"] = df["PreferredTime"].map(time_map)
+if "PreferredTimeOfDay" in df.columns:
+    df["PreferredTimeOfDay"] = df["PreferredTimeOfDay"].map(
+        {"Nuit": 0, "Matin": 1, "Midi": 2, "Après-midi": 3, "Soir": 4}
+    )
 
 
 # ==========================================
-# 6️⃣ ONE-HOT ENCODING (Non-ordinal)
+# 7️⃣ ONE-HOT ENCODING (Non-ordinal)
 # ==========================================
 
 print("Applying one-hot encoding...")
@@ -126,14 +167,14 @@ print("Applying one-hot encoding...")
 categorical_cols = df.select_dtypes(include=["object", "str"]).columns.tolist()
 
 if categorical_cols:
-    print(f"  Encoding columns: {categorical_cols}")
+    print(f"  Encoding : {categorical_cols}")
     df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
 else:
     print("  No remaining categorical columns to encode.")
 
 
 # ==========================================
-# 7️⃣ SPLIT FEATURES / TARGET
+# 8️⃣ SPLIT FEATURES / TARGET
 # ==========================================
 
 print("Splitting target variable...")
@@ -144,32 +185,35 @@ if "Churn" not in df.columns:
 X = df.drop("Churn", axis=1)
 y = df["Churn"]
 
-print(f"  Features : {X.shape[1]} columns")
-print(f"  Churn rate : {y.mean():.2%}")
+print(f"  Features  : {X.shape[1]} columns")
+print(f"  Churn rate: {y.mean():.2%}")
 
 
 # ==========================================
-# 8️⃣ TRAIN / TEST SPLIT
+# 9️⃣ TRAIN / TEST SPLIT  (80% / 20%)
+# ==========================================
+# stratify=y → preserves the churn distribution
+# in both train and test sets.
 # ==========================================
 
-print("Performing train/test split...")
+print("Performing train/test split (80/20 stratified)...")
 
 X_train, X_test, y_train, y_test = train_test_split(
-    X,
-    y,
+    X, y,
     test_size=0.2,
     random_state=42,
-    stratify=y
+    stratify=y          # Preserve Churn proportion
 )
 
 print(f"  X_train : {X_train.shape} | X_test : {X_test.shape}")
+print(f"  Churn rate train : {y_train.mean():.2%} | test : {y_test.mean():.2%}")
 
 
 # ==========================================
-# 9️⃣ NaN SAFETY NET (Before Scaling)
+# 🔟 NaN SAFETY NET (Before Scaling)
 # ==========================================
 
-print("Checking and filling any remaining NaN values...")
+print("Checking for remaining NaN values...")
 
 nan_cols = X_train.isnull().sum()
 nan_cols = nan_cols[nan_cols > 0]
@@ -177,10 +221,10 @@ nan_cols = nan_cols[nan_cols > 0]
 if len(nan_cols) > 0:
     print(f"  ⚠️  Remaining NaNs found:\n{nan_cols}")
 else:
-    print("  ✅ No remaining NaNs detected.")
+    print("  ✅ No remaining NaNs.")
 
-# Numeric → fill with train median (no data leakage)
-numeric_cols = X_train.select_dtypes(include=["int64", "float64"]).columns
+# Numeric → fill with train median only (no leakage)
+numeric_cols  = X_train.select_dtypes(include=["int64", "float64"]).columns
 train_medians = X_train[numeric_cols].median()
 X_train[numeric_cols] = X_train[numeric_cols].fillna(train_medians)
 X_test[numeric_cols]  = X_test[numeric_cols].fillna(train_medians)
@@ -192,30 +236,34 @@ X_test[other_cols]  = X_test[other_cols].fillna(0)
 
 
 # ==========================================
-# 🔟 SCALING NUMERIC FEATURES
+# 1️⃣1️⃣ SCALING NUMERIC FEATURES
+# ==========================================
+# fit_transform on X_train ONLY → no data leakage
+# transform on X_test using same parameters
+# NEVER scale y (target variable)
 # ==========================================
 
-print("Scaling numeric features...")
+print("Scaling numeric features (StandardScaler)...")
 
 scaler = StandardScaler()
-X_train[numeric_cols] = scaler.fit_transform(X_train[numeric_cols])
-X_test[numeric_cols]  = scaler.transform(X_test[numeric_cols])
+X_train[numeric_cols] = scaler.fit_transform(X_train[numeric_cols])  # fit + transform
+X_test[numeric_cols]  = scaler.transform(X_test[numeric_cols])        # transform only
 
 
 # ==========================================
-# 1️⃣1️⃣ SAVE PROCESSED DATA
+# 1️⃣2️⃣ SAVE PROCESSED DATA
 # ==========================================
 
 print("Saving processed datasets...")
 
 X_train.to_csv("data/train_test/X_train.csv", index=False)
-X_test.to_csv("data/train_test/X_test.csv", index=False)
+X_test.to_csv("data/train_test/X_test.csv",   index=False)
 y_train.to_csv("data/train_test/y_train.csv", index=False)
-y_test.to_csv("data/train_test/y_test.csv", index=False)
+y_test.to_csv("data/train_test/y_test.csv",   index=False)
 
 joblib.dump(scaler, "models/scaler.pkl")
 
 print("✅ Preprocessing complete.")
 print(f"   X_train : {X_train.shape}")
 print(f"   X_test  : {X_test.shape}")
-print("   Files saved in data/train_test/ and models/")
+print("   Files saved → data/train_test/  &  models/scaler.pkl")

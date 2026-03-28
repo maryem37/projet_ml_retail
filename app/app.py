@@ -11,7 +11,7 @@ import os
 app = Flask(__name__)
 
 # ==========================================
-# LOAD MODEL & SCALER AT STARTUP
+# LOAD MODELS AT STARTUP
 # ==========================================
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -19,9 +19,27 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 model  = joblib.load(os.path.join(BASE_DIR, "models", "churn_model.pkl"))
 scaler = joblib.load(os.path.join(BASE_DIR, "models", "scaler.pkl"))
 
+# Load clustering model if available
+CLUSTER_AVAILABLE = False
+kmeans = None
+try:
+    kmeans = joblib.load(os.path.join(BASE_DIR, "models", "kmeans_model.pkl"))
+    CLUSTER_AVAILABLE = True
+    print("  ✅ kmeans_model.pkl loaded")
+except FileNotFoundError:
+    print("  ⚠️  kmeans_model.pkl not found — clustering disabled")
+
 X_train_ref      = pd.read_csv(os.path.join(BASE_DIR, "data", "train_test", "X_train.csv"), nrows=1)
 expected_columns = X_train_ref.columns.tolist()
 scaler_columns   = list(scaler.feature_names_in_)
+
+# Cluster names based on our analysis
+CLUSTER_NAMES = {
+    0: {"label": "At Risk",      "emoji": "🟠", "color": "#e67e22"},
+    1: {"label": "Active Loyal", "emoji": "🟢", "color": "#27ae60"},
+    2: {"label": "Lost",         "emoji": "🔴", "color": "#c0392b"},
+    3: {"label": "Occasional",   "emoji": "🔵", "color": "#2c5f8a"},
+}
 
 
 # ==========================================
@@ -46,25 +64,44 @@ def predict_churn(input_dict):
     prediction  = model.predict(df)[0]
     probability = model.predict_proba(df)[0][1]
 
+    # Cluster prediction
+    cluster_id   = None
+    cluster_info = None
+    if CLUSTER_AVAILABLE:
+        numeric_cols = df.select_dtypes(include=["int64", "float64"]).columns
+        X_num        = df[numeric_cols].fillna(0)
+
+        # Align to kmeans feature count
+        if X_num.shape[1] >= kmeans.n_features_in_:
+            X_num = X_num.iloc[:, :kmeans.n_features_in_]
+        else:
+            for _ in range(kmeans.n_features_in_ - X_num.shape[1]):
+                X_num[f"pad_{_}"] = 0
+
+        cluster_id   = int(kmeans.predict(X_num)[0])
+        cluster_info = CLUSTER_NAMES.get(cluster_id, {
+            "label": f"Cluster {cluster_id}", "emoji": "⚪", "color": "#888"
+        })
+
+    # Risk level
     if probability < 0.25:
         risk = "Faible"
-        risk_en = "Low"
     elif probability < 0.50:
         risk = "Moyen"
-        risk_en = "Medium"
     elif probability < 0.75:
         risk = "Élevé"
-        risk_en = "High"
     else:
         risk = "Critique"
-        risk_en = "Critical"
 
     return {
-        "prediction" : int(prediction),
-        "label"      : "Churn" if prediction == 1 else "Fidèle",
-        "probability": round(float(probability) * 100, 1),
-        "risk_level" : risk,
-        "risk_en"    : risk_en,
+        "prediction"   : int(prediction),
+        "label"        : "Churn" if prediction == 1 else "Fidèle",
+        "probability"  : round(float(probability) * 100, 1),
+        "risk_level"   : risk,
+        "cluster_id"   : cluster_id,
+        "cluster_label": cluster_info["label"] if cluster_info else None,
+        "cluster_emoji": cluster_info["emoji"] if cluster_info else None,
+        "cluster_color": cluster_info["color"] if cluster_info else None,
     }
 
 
@@ -74,7 +111,7 @@ def predict_churn(input_dict):
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", cluster_available=CLUSTER_AVAILABLE)
 
 
 @app.route("/predict", methods=["POST"])
