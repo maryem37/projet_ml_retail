@@ -49,7 +49,7 @@ CLUSTER_NAMES = {
 def predict_churn(input_dict):
     df = pd.DataFrame([input_dict])
 
-    categorical_cols = df.select_dtypes(include=["object", "str"]).columns.tolist()
+    categorical_cols = df.select_dtypes(include=[np.number]).columns.tolist()
     if categorical_cols:
         df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
 
@@ -68,7 +68,7 @@ def predict_churn(input_dict):
     cluster_id   = None
     cluster_info = None
     if CLUSTER_AVAILABLE:
-        numeric_cols = df.select_dtypes(include=["int64", "float64"]).columns
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
         X_num        = df[numeric_cols].fillna(0)
 
         # Align to kmeans feature count

@@ -1,0 +1,16 @@
+creation_timestamp: 1774895926706
+current_stage: None
+deployment_job_state: null
+description: null
+last_updated_timestamp: 1774895926706
+model_id: m-3cd409f0ca8d4dfcb3c5b329747792f7
+name: ChurnClassifier
+run_id: f5f5a54e577b4362a7561e950ebab602
+run_link: null
+source: models:/m-3cd409f0ca8d4dfcb3c5b329747792f7
+status: READY
+status_message: null
+storage_location: file:///D:/projet_ml_retail/mlruns/702495396605471118/models/m-3cd409f0ca8d4dfcb3c5b329747792f7/artifacts
+user_id: null
+version: 1
+workspace: default

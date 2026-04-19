@@ -1,0 +1,243 @@
+# ==========================================
+# RETAIL ML PROJECT - MODEL MONITORING
+# ==========================================
+# Evidently detecte automatiquement :
+#   - Data Drift : les donnees ont-elles change ?
+#   - Model Performance : le modele se degrade-t-il ?
+#   - Target Drift : la distribution du churn change-t-elle ?
+#
+# En production, ce script s'execute periodiquement
+# (ex: chaque semaine) pour alerter si le modele
+# necessite un re-entrainement.
+#
+# Usage:
+#   python src/monitoring.py
+#   → Ouvre reports/monitoring_report.html dans ton navigateur
+# ==========================================
+
+import pandas as pd
+import numpy as np
+import joblib
+import os
+import webbrowser
+import sys
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from config_loader import get_config, get_logger
+
+cfg    = get_config()
+logger = get_logger("monitoring")
+
+os.makedirs("reports", exist_ok=True)
+
+
+# ==========================================
+# 1️⃣ LOAD DATA & MODEL
+# ==========================================
+
+logger.info("Loading data and model for monitoring...")
+
+X_train = pd.read_csv("data/train_test/X_train.csv")
+X_test  = pd.read_csv("data/train_test/X_test.csv")
+y_train = pd.read_csv("data/train_test/y_train.csv").squeeze()
+y_test  = pd.read_csv("data/train_test/y_test.csv").squeeze()
+model   = joblib.load("models/churn_model.pkl")
+
+# Reference dataset = X_train (what the model was trained on)
+# Current dataset   = X_test  (new data arriving in production)
+reference = X_train.copy()
+current   = X_test.copy()
+
+reference["target"] = y_train.values
+current["target"]   = y_test.values
+
+# Add predictions
+reference["prediction"] = model.predict(X_train)
+current["prediction"]   = model.predict(X_test)
+
+logger.info("Reference (train): %d rows | Current (test): %d rows",
+            len(reference), len(current))
+
+
+# ==========================================
+# 2️⃣ EVIDENTLY REPORTS
+# ==========================================
+
+try:
+    from evidently.report import Report
+    from evidently.metric_preset import (
+        DataDriftPreset,
+        ClassificationPreset,
+        DataQualityPreset,
+        TargetDriftPreset,
+    )
+    from evidently.metrics import (
+        DatasetDriftMetric,
+        DatasetMissingValuesSummaryMetric,
+        ColumnDriftMetric,
+    )
+
+    logger.info("Evidently loaded successfully")
+    EVIDENTLY_OK = True
+
+except ImportError:
+    logger.error("Evidently not installed. Run: pip install evidently")
+    EVIDENTLY_OK = False
+
+
+if EVIDENTLY_OK:
+
+    # ── Report 1: Full Monitoring Report ─────────────────
+    logger.info("Generating full monitoring report...")
+
+    report = Report(metrics=[
+        DataDriftPreset(),        # Detecte si les features ont derive
+        DataQualityPreset(),      # Qualite des donnees (NaN, outliers, etc)
+        ClassificationPreset(),   # Performance du modele de classification
+        TargetDriftPreset(),      # Derive de la variable cible (Churn)
+    ])
+
+    report.run(
+        reference_data=reference,
+        current_data=current,
+        column_mapping=_get_column_mapping(reference)
+    )
+
+    report_path = "reports/monitoring_report.html"
+    report.save_html(report_path)
+    logger.info("Full monitoring report saved: %s", report_path)
+
+    # ── Report 2: Data Drift Only ─────────────────────────
+    logger.info("Generating data drift report...")
+
+    # Select top 15 most important features to monitor
+    important_features = _get_top_features(model, X_train.columns, n=15)
+
+    drift_report = Report(metrics=[
+        DatasetDriftMetric(),
+    ] + [
+        ColumnDriftMetric(column_name=col)
+        for col in important_features
+    ])
+
+    drift_report.run(
+        reference_data=reference[important_features + ["target", "prediction"]],
+        current_data=current[important_features + ["target", "prediction"]],
+        column_mapping=_get_column_mapping(reference[important_features + ["target", "prediction"]])
+    )
+
+    drift_path = "reports/drift_report.html"
+    drift_report.save_html(drift_path)
+    logger.info("Drift report saved: %s", drift_path)
+
+    # ── Print Summary ────────────────────────────────────
+    _print_drift_summary(report)
+
+else:
+    logger.warning("Running simplified monitoring without Evidently...")
+    _simple_monitoring(reference, current, model, X_train.columns)
+
+
+# ==========================================
+# HELPER FUNCTIONS
+# ==========================================
+
+def _get_column_mapping(df):
+    """Creates Evidently column mapping."""
+    from evidently import ColumnMapping
+    return ColumnMapping(
+        target="target",
+        prediction="prediction",
+        numerical_features=[
+            c for c in df.columns
+            if c not in ["target", "prediction"]
+            and df[c].dtype in ["int64", "float64"]
+        ][:20]  # limit for performance
+    )
+
+
+def _get_top_features(model, feature_names, n=15):
+    """Returns top N most important features."""
+    if hasattr(model, "feature_importances_"):
+        importances = pd.Series(model.feature_importances_, index=feature_names)
+        return importances.nlargest(n).index.tolist()
+    return feature_names[:n].tolist()
+
+
+def _print_drift_summary(report):
+    """Prints a quick drift summary to console."""
+    print("\n" + "="*60)
+    print("  MONITORING SUMMARY")
+    print("="*60)
+    print("  Reports generated:")
+    print("    reports/monitoring_report.html  ← Full report")
+    print("    reports/drift_report.html       ← Data drift")
+    print("\n  Open in browser:")
+    print("    reports/monitoring_report.html")
+    print("="*60)
+
+
+def _simple_monitoring(reference, current, model, feature_names):
+    """
+    Simplified monitoring without Evidently.
+    Computes basic drift statistics manually.
+    """
+    import scipy.stats as stats
+
+    logger.info("Running simplified drift detection...")
+
+    numeric_cols = reference.select_dtypes(include=["float64", "int64"]).columns
+    numeric_cols = [c for c in numeric_cols if c not in ["target", "prediction"]][:20]
+
+    drifted = []
+    for col in numeric_cols:
+        ref_vals = reference[col].dropna()
+        cur_vals = current[col].dropna()
+
+        # KS Test: if p-value < 0.05, drift detected
+        ks_stat, p_value = stats.ks_2samp(ref_vals, cur_vals)
+
+        if p_value < 0.05:
+            drifted.append({
+                "feature" : col,
+                "ks_stat" : round(ks_stat, 4),
+                "p_value" : round(p_value, 4),
+                "ref_mean": round(ref_vals.mean(), 3),
+                "cur_mean": round(cur_vals.mean(), 3),
+            })
+
+    drift_df = pd.DataFrame(drifted).sort_values("ks_stat", ascending=False)
+    drift_df.to_csv("reports/drift_summary.csv", index=False)
+
+    print("\n" + "="*60)
+    print("  SIMPLIFIED MONITORING RESULTS")
+    print("="*60)
+    print(f"  Features checked : {len(numeric_cols)}")
+    print(f"  Drifted features : {len(drifted)} (KS test p<0.05)")
+
+    if len(drifted) > 0:
+        print(f"\n  Top drifted features:")
+        for _, row in drift_df.head(5).iterrows():
+            print(f"    {row['feature']:<30} KS={row['ks_stat']} p={row['p_value']}")
+    else:
+        print("  No significant drift detected.")
+
+    # Model performance comparison
+    from sklearn.metrics import roc_auc_score
+    ref_auc = roc_auc_score(reference["target"], model.predict_proba(
+        reference.drop(columns=["target","prediction"])
+    )[:, 1])
+    cur_auc = roc_auc_score(current["target"], model.predict_proba(
+        current.drop(columns=["target","prediction"])
+    )[:, 1])
+
+    print(f"\n  Model Performance:")
+    print(f"    Reference ROC-AUC : {ref_auc:.4f}")
+    print(f"    Current   ROC-AUC : {cur_auc:.4f}")
+    print(f"    Degradation       : {(ref_auc - cur_auc)*100:.2f}%")
+    print(f"\n  Report: reports/drift_summary.csv")
+    print("="*60)
+
+
+if __name__ == "__main__":
+    pass  # all code runs at import time above

@@ -1,0 +1,14 @@
+artifact_uri: file:///D:/projet_ml_retail/mlruns/702495396605471118/9231d70bbfbc4ba198323ddbb347dd2a/artifacts
+end_time: 1774896226461
+entry_point_name: ''
+experiment_id: '702495396605471118'
+lifecycle_stage: active
+run_id: 9231d70bbfbc4ba198323ddbb347dd2a
+run_name: CV_Gradient_Boosting
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1774896220301
+status: 3
+tags: []
+user_id: MSI

@@ -1,0 +1,7 @@
+artifact_location: file:///D:/projet_ml_retail/mlruns/702495396605471118
+creation_time: 1774895882630
+experiment_id: '702495396605471118'
+last_update_time: 1774895882630
+lifecycle_stage: active
+name: Retail_Churn_Prediction
+workspace: default

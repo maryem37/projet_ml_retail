@@ -1,0 +1,25 @@
+Source : Surrogate DecisionTreeClassifier — fitted on Gradient Boosting calibrated predictions (max_depth=3)
+Model  : Gradient Boosting
+
+|--- PreferredMonth <= 0.2581
+|   |--- CustomerTenureDays <= 0.3052
+|   |   |--- CustomerTenureDays <= -0.6228
+|   |   |   |--- weights: [1.0000, 676.0000] class: 1
+|   |   |--- CustomerTenureDays >  -0.6228
+|   |   |   |--- weights: [88.0000, 270.0000] class: 1
+|   |--- CustomerTenureDays >  0.3052
+|   |   |--- CustomerTenureDays <= 0.6283
+|   |   |   |--- weights: [80.0000, 70.0000] class: 0
+|   |   |--- CustomerTenureDays >  0.6283
+|   |   |   |--- weights: [477.0000, 31.0000] class: 0
+|--- PreferredMonth >  0.2581
+|   |--- FavoriteSeason_Hiver <= 0.6783
+|   |   |--- PreferredMonth <= 0.5462
+|   |   |   |--- weights: [363.0000, 23.0000] class: 0
+|   |   |--- PreferredMonth >  0.5462
+|   |   |   |--- weights: [1034.0000, 0.0000] class: 0
+|   |--- FavoriteSeason_Hiver >  0.6783
+|   |   |--- CustomerTenureDays <= 1.0416
+|   |   |   |--- weights: [14.0000, 218.0000] class: 1
+|   |   |--- CustomerTenureDays >  1.0416
+|   |   |   |--- weights: [152.0000, 0.0000] class: 0

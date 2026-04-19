@@ -1,0 +1,116 @@
+artifact_path: file:///D:/projet_ml_retail/mlruns/702495396605471118/models/m-3735ca775d5644a4843f69da90c490fd/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.12.0
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.8.0
+    skops_trusted_types: null
+is_signature_from_type_hint: false
+mlflow_version: 3.10.1
+model_id: m-3735ca775d5644a4843f69da90c490fd
+model_size_bytes: 866099
+model_uuid: m-3735ca775d5644a4843f69da90c490fd
+prompts: null
+run_id: 2f3c61eae94f45548bac124490715765
+saved_input_example_info:
+  artifact_path: input_example.json
+  pandas_orient: split
+  serving_input_path: serving_input_example.json
+  type: dataframe
+signature:
+  inputs: '[{"type": "long", "name": "Recency", "required": true}, {"type": "double",
+    "name": "Frequency", "required": true}, {"type": "double", "name": "MonetaryTotal",
+    "required": true}, {"type": "double", "name": "MonetaryAvg", "required": true},
+    {"type": "double", "name": "MonetaryStd", "required": true}, {"type": "double",
+    "name": "MonetaryMin", "required": true}, {"type": "double", "name": "MonetaryMax",
+    "required": true}, {"type": "double", "name": "TotalQuantity", "required": true},
+    {"type": "double", "name": "AvgQuantityPerTransaction", "required": true}, {"type":
+    "long", "name": "MinQuantity", "required": true}, {"type": "long", "name": "MaxQuantity",
+    "required": true}, {"type": "long", "name": "CustomerTenureDays", "required":
+    true}, {"type": "long", "name": "FirstPurchaseDaysAgo", "required": true}, {"type":
+    "long", "name": "PreferredDayOfWeek", "required": true}, {"type": "long", "name":
+    "PreferredHour", "required": true}, {"type": "long", "name": "PreferredMonth",
+    "required": true}, {"type": "double", "name": "WeekendPurchaseRatio", "required":
+    true}, {"type": "double", "name": "AvgDaysBetweenPurchases", "required": true},
+    {"type": "long", "name": "UniqueProducts", "required": true}, {"type": "double",
+    "name": "AvgProductsPerTransaction", "required": true}, {"type": "long", "name":
+    "UniqueCountries", "required": true}, {"type": "long", "name": "ZeroPriceCount",
+    "required": true}, {"type": "long", "name": "CancelledTransactions", "required":
+    true}, {"type": "double", "name": "ReturnRatio", "required": true}, {"type": "double",
+    "name": "AvgLinesPerInvoice", "required": true}, {"type": "double", "name": "Age",
+    "required": true}, {"type": "double", "name": "SupportTicketsCount", "required":
+    true}, {"type": "double", "name": "SatisfactionScore", "required": true}, {"type":
+    "long", "name": "AgeCategory", "required": true}, {"type": "long", "name": "SpendingCategory",
+    "required": true}, {"type": "long", "name": "PreferredTimeOfDay", "required":
+    true}, {"type": "long", "name": "BasketSizeCategory", "required": true}, {"type":
+    "long", "name": "Age_IsMissing", "required": true}, {"type": "double", "name":
+    "MonetaryPerDay", "required": true}, {"type": "double", "name": "AvgBasketValue",
+    "required": true}, {"type": "double", "name": "TenureRatio", "required": true},
+    {"type": "double", "name": "EngagementScore", "required": true}, {"type": "double",
+    "name": "DisengagementScore", "required": true}, {"type": "double", "name": "RevenueIndex",
+    "required": true}, {"type": "double", "name": "CustomerType_Nouveau", "required":
+    true}, {"type": "double", "name": "CustomerType_Occasionnel", "required": true},
+    {"type": "double", "name": "CustomerType_Perdu", "required": true}, {"type": "double",
+    "name": "CustomerType_R\u00e9gulier", "required": true}, {"type": "double", "name":
+    "FavoriteSeason_Hiver", "required": true}, {"type": "double", "name": "FavoriteSeason_Printemps",
+    "required": true}, {"type": "double", "name": "FavoriteSeason_\u00c9t\u00e9",
+    "required": true}, {"type": "double", "name": "Region_Am\u00e9rique du Nord",
+    "required": true}, {"type": "double", "name": "Region_Am\u00e9rique du Sud", "required":
+    true}, {"type": "double", "name": "Region_Asie", "required": true}, {"type": "double",
+    "name": "Region_Autre", "required": true}, {"type": "double", "name": "Region_Europe
+    centrale", "required": true}, {"type": "double", "name": "Region_Europe continentale",
+    "required": true}, {"type": "double", "name": "Region_Europe de l''Est", "required":
+    true}, {"type": "double", "name": "Region_Europe du Nord", "required": true},
+    {"type": "double", "name": "Region_Europe du Sud", "required": true}, {"type":
+    "double", "name": "Region_Moyen-Orient", "required": true}, {"type": "double",
+    "name": "Region_Oc\u00e9anie", "required": true}, {"type": "double", "name": "Region_UK",
+    "required": true}, {"type": "double", "name": "WeekendPreference_Semaine", "required":
+    true}, {"type": "double", "name": "WeekendPreference_Weekend", "required": true},
+    {"type": "double", "name": "ProductDiversity_Mod\u00e9r\u00e9", "required": true},
+    {"type": "double", "name": "ProductDiversity_Sp\u00e9cialis\u00e9", "required":
+    true}, {"type": "double", "name": "Gender_M", "required": true}, {"type": "double",
+    "name": "Gender_Unknown", "required": true}, {"type": "double", "name": "AccountStatus_Closed",
+    "required": true}, {"type": "double", "name": "AccountStatus_Pending", "required":
+    true}, {"type": "double", "name": "AccountStatus_Suspended", "required": true},
+    {"type": "double", "name": "Country_Austria", "required": true}, {"type": "double",
+    "name": "Country_Bahrain", "required": true}, {"type": "double", "name": "Country_Belgium",
+    "required": true}, {"type": "double", "name": "Country_Brazil", "required": true},
+    {"type": "double", "name": "Country_Canada", "required": true}, {"type": "double",
+    "name": "Country_Channel Islands", "required": true}, {"type": "double", "name":
+    "Country_Cyprus", "required": true}, {"type": "double", "name": "Country_Czech
+    Republic", "required": true}, {"type": "double", "name": "Country_Denmark", "required":
+    true}, {"type": "double", "name": "Country_EIRE", "required": true}, {"type":
+    "double", "name": "Country_European Community", "required": true}, {"type": "double",
+    "name": "Country_Finland", "required": true}, {"type": "double", "name": "Country_France",
+    "required": true}, {"type": "double", "name": "Country_Germany", "required": true},
+    {"type": "double", "name": "Country_Greece", "required": true}, {"type": "double",
+    "name": "Country_Iceland", "required": true}, {"type": "double", "name": "Country_Israel",
+    "required": true}, {"type": "double", "name": "Country_Italy", "required": true},
+    {"type": "double", "name": "Country_Japan", "required": true}, {"type": "double",
+    "name": "Country_Lebanon", "required": true}, {"type": "double", "name": "Country_Lithuania",
+    "required": true}, {"type": "double", "name": "Country_Malta", "required": true},
+    {"type": "double", "name": "Country_Netherlands", "required": true}, {"type":
+    "double", "name": "Country_Norway", "required": true}, {"type": "double", "name":
+    "Country_Poland", "required": true}, {"type": "double", "name": "Country_Portugal",
+    "required": true}, {"type": "double", "name": "Country_RSA", "required": true},
+    {"type": "double", "name": "Country_Saudi Arabia", "required": true}, {"type":
+    "double", "name": "Country_Singapore", "required": true}, {"type": "double", "name":
+    "Country_Spain", "required": true}, {"type": "double", "name": "Country_Sweden",
+    "required": true}, {"type": "double", "name": "Country_Switzerland", "required":
+    true}, {"type": "double", "name": "Country_USA", "required": true}, {"type": "double",
+    "name": "Country_United Arab Emirates", "required": true}, {"type": "double",
+    "name": "Country_United Kingdom", "required": true}, {"type": "double", "name":
+    "Country_Unspecified", "required": true}]'
+  outputs: '[{"type": "long", "required": true}]'
+  params: null
+type_hint_from_example: false
+utc_time_created: '2026-03-30 19:10:27.018813'

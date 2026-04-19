@@ -1,0 +1,14 @@
+artifact_uri: file:///D:/projet_ml_retail/mlruns/702495396605471118/669da3afa86b4a1d85f2ad9f781a3dd2/artifacts
+end_time: 1774898211337
+entry_point_name: ''
+experiment_id: '702495396605471118'
+lifecycle_stage: active
+run_id: 669da3afa86b4a1d85f2ad9f781a3dd2
+run_name: FINAL_Random_Forest_GridSearch
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1774898200956
+status: 3
+tags: []
+user_id: MSI

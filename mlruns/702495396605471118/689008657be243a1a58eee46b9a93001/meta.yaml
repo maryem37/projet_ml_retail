@@ -1,0 +1,14 @@
+artifact_uri: file:///D:/projet_ml_retail/mlruns/702495396605471118/689008657be243a1a58eee46b9a93001/artifacts
+end_time: 1774897417043
+entry_point_name: ''
+experiment_id: '702495396605471118'
+lifecycle_stage: active
+run_id: 689008657be243a1a58eee46b9a93001
+run_name: CV_Random_Forest
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1774897410212
+status: 3
+tags: []
+user_id: MSI

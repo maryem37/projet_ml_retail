@@ -1,0 +1,219 @@
+2026-03-30 19:38:02 | INFO     | train_mlflow | MLflow tracking URI : mlruns
+2026-03-30 19:38:02 | INFO     | train_mlflow | MLflow experiment   : Retail_Churn_Prediction
+2026-03-30 19:38:02 | INFO     | train_mlflow | Loading preprocessed data...
+2026-03-30 19:38:02 | INFO     | train_mlflow | X_train: (3497, 103) | X_test: (875, 103)
+2026-03-30 19:38:02 | INFO     | train_mlflow | Churn rate train: 33.26% | test: 33.26%
+2026-03-30 19:38:05 | INFO     | train_mlflow | SMOTE applied: 3497 → 4668 samples
+2026-03-30 19:38:05 | INFO     | train_mlflow | Starting MLflow runs for each model...
+2026-03-30 19:38:09 | INFO     | train_mlflow | [Logistic_Regression] CV ROC-AUC: 0.9997 ± 0.0005
+2026-03-30 19:38:17 | INFO     | train_mlflow | [Random_Forest] CV ROC-AUC: 1.0000 ± 0.0000
+2026-03-30 19:38:24 | INFO     | train_mlflow | [Gradient_Boosting] CV ROC-AUC: 1.0000 ± 0.0000
+2026-03-30 19:38:24 | INFO     | train_mlflow | Best model from CV: Random_Forest (1.0000)
+2026-03-30 19:38:38 | INFO     | train_mlflow | GridSearch best params: {'max_depth': None, 'min_samples_split': 2, 'n_estimators': 100}
+2026-03-30 19:38:38 | INFO     | train_mlflow | GridSearch best CV ROC-AUC: 1.0000
+2026-03-30 19:38:38 | INFO     | train_mlflow | Final MLflow run ID: f5f5a54e577b4362a7561e950ebab602
+2026-03-30 19:38:38 | INFO     | train_mlflow | Test ROC-AUC  : 1.0000
+2026-03-30 19:38:38 | INFO     | train_mlflow | Test Accuracy : 1.0000
+2026-03-30 19:38:38 | INFO     | train_mlflow | Test F1       : 1.0000
+2026-03-30 19:38:46 | INFO     | train_mlflow | Model logged to MLflow: models:/m-3cd409f0ca8d4dfcb3c5b329747792f7
+2026-03-30 19:38:46 | INFO     | train_mlflow | Model saved locally: models/churn_model.pkl
+2026-03-30 19:43:27 | INFO     | train_mlflow | MLflow tracking URI : mlruns
+2026-03-30 19:43:27 | INFO     | train_mlflow | MLflow experiment   : Retail_Churn_Prediction
+2026-03-30 19:43:27 | INFO     | train_mlflow | Loading preprocessed data...
+2026-03-30 19:43:27 | INFO     | train_mlflow | X_train: (3497, 103) | X_test: (875, 103)
+2026-03-30 19:43:27 | INFO     | train_mlflow | Churn rate train: 33.26% | test: 33.26%
+2026-03-30 19:43:30 | INFO     | train_mlflow | SMOTE applied: 3497 → 4668 samples
+2026-03-30 19:43:30 | INFO     | train_mlflow | Starting MLflow runs for each model...
+2026-03-30 19:43:33 | INFO     | train_mlflow | [Logistic_Regression] CV ROC-AUC: 0.9997 ± 0.0005
+2026-03-30 19:43:40 | INFO     | train_mlflow | [Random_Forest] CV ROC-AUC: 1.0000 ± 0.0000
+2026-03-30 19:43:46 | INFO     | train_mlflow | [Gradient_Boosting] CV ROC-AUC: 1.0000 ± 0.0000
+2026-03-30 19:43:46 | INFO     | train_mlflow | Best model from CV: Random_Forest (1.0000)
+2026-03-30 19:44:02 | INFO     | train_mlflow | GridSearch best params: {'max_depth': None, 'min_samples_split': 2, 'n_estimators': 100}
+2026-03-30 19:44:02 | INFO     | train_mlflow | GridSearch best CV ROC-AUC: 1.0000
+2026-03-30 19:44:02 | INFO     | train_mlflow | Final MLflow run ID: fd9ca9c3153041fdaf0b98bbc885b23d
+2026-03-30 19:44:02 | INFO     | train_mlflow | Test ROC-AUC  : 1.0000
+2026-03-30 19:44:02 | INFO     | train_mlflow | Test Accuracy : 1.0000
+2026-03-30 19:44:02 | INFO     | train_mlflow | Test F1       : 1.0000
+2026-03-30 19:44:12 | INFO     | train_mlflow | Model logged to MLflow: models:/m-1eb94ddda42148d8b4fbcac47be0fd89
+2026-03-30 19:44:13 | INFO     | train_mlflow | Model saved locally: models/churn_model.pkl
+2026-03-30 20:03:23 | INFO     | train_mlflow | MLflow tracking URI : mlruns
+2026-03-30 20:03:23 | INFO     | train_mlflow | MLflow experiment   : Retail_Churn_Prediction
+2026-03-30 20:03:23 | INFO     | train_mlflow | Loading preprocessed data...
+2026-03-30 20:03:24 | INFO     | train_mlflow | X_train: (3497, 103) | X_test: (875, 103)
+2026-03-30 20:03:24 | INFO     | train_mlflow | Churn rate train: 33.26% | test: 33.26%
+2026-03-30 20:03:26 | INFO     | train_mlflow | SMOTE applied: 3497 → 4668 samples
+2026-03-30 20:03:26 | INFO     | train_mlflow | Starting MLflow runs for each model...
+2026-03-30 20:03:30 | INFO     | train_mlflow | [Logistic_Regression] CV ROC-AUC: 0.9968 ± 0.0028
+2026-03-30 20:03:37 | INFO     | train_mlflow | [Random_Forest] CV ROC-AUC: 1.0000 ± 0.0000
+2026-03-30 20:03:43 | INFO     | train_mlflow | [Gradient_Boosting] CV ROC-AUC: 1.0000 ± 0.0000
+2026-03-30 20:03:43 | INFO     | train_mlflow | Best model from CV: Random_Forest (1.0000)
+2026-03-30 20:03:58 | INFO     | train_mlflow | GridSearch best params: {'max_depth': None, 'min_samples_split': 2, 'n_estimators': 100}
+2026-03-30 20:03:58 | INFO     | train_mlflow | GridSearch best CV ROC-AUC: 1.0000
+2026-03-30 20:03:58 | INFO     | train_mlflow | Final MLflow run ID: e49a72b4afc348149b766ff8a5b15cd9
+2026-03-30 20:03:58 | INFO     | train_mlflow | Test ROC-AUC  : 1.0000
+2026-03-30 20:03:58 | INFO     | train_mlflow | Test Accuracy : 1.0000
+2026-03-30 20:03:58 | INFO     | train_mlflow | Test F1       : 1.0000
+2026-03-30 20:04:09 | INFO     | train_mlflow | Model logged to MLflow: models:/m-129e76d8addd4bad9ced6bc24d1512a2
+2026-03-30 20:04:09 | INFO     | train_mlflow | Model saved locally: models/churn_model.pkl
+2026-03-30 20:10:10 | INFO     | train_mlflow | MLflow tracking URI : mlruns
+2026-03-30 20:10:10 | INFO     | train_mlflow | MLflow experiment   : Retail_Churn_Prediction
+2026-03-30 20:10:10 | INFO     | train_mlflow | Loading preprocessed data...
+2026-03-30 20:10:10 | INFO     | train_mlflow | X_train: (3497, 103) | X_test: (875, 103)
+2026-03-30 20:10:10 | INFO     | train_mlflow | Churn rate train: 33.26% | test: 33.26%
+2026-03-30 20:10:14 | INFO     | train_mlflow | SMOTE applied: 3497 → 4668 samples
+2026-03-30 20:10:14 | INFO     | train_mlflow | Starting MLflow runs for each model...
+2026-03-30 20:10:17 | INFO     | train_mlflow | [Logistic_Regression] CV ROC-AUC: 0.9968 ± 0.0028
+2026-03-30 20:10:19 | INFO     | train_mlflow | [Random_Forest] CV ROC-AUC: 1.0000 ± 0.0000
+2026-03-30 20:10:22 | INFO     | train_mlflow | [Gradient_Boosting] CV ROC-AUC: 1.0000 ± 0.0000
+2026-03-30 20:10:22 | INFO     | train_mlflow | Best model from CV: Random_Forest (1.0000)
+2026-03-30 20:10:25 | INFO     | train_mlflow | GridSearch best params: {'max_depth': None, 'min_samples_split': 2, 'n_estimators': 100}
+2026-03-30 20:10:25 | INFO     | train_mlflow | GridSearch best CV ROC-AUC: 1.0000
+2026-03-30 20:10:26 | INFO     | train_mlflow | Final MLflow run ID: 2f3c61eae94f45548bac124490715765
+2026-03-30 20:10:26 | INFO     | train_mlflow | Test ROC-AUC  : 1.0000
+2026-03-30 20:10:26 | INFO     | train_mlflow | Test Accuracy : 1.0000
+2026-03-30 20:10:26 | INFO     | train_mlflow | Test F1       : 1.0000
+2026-03-30 20:10:31 | INFO     | train_mlflow | Model logged to MLflow: models:/m-3735ca775d5644a4843f69da90c490fd
+2026-03-30 20:10:31 | INFO     | train_mlflow | Model saved locally: models/churn_model.pkl
+2026-03-30 20:16:07 | INFO     | train_mlflow | MLflow tracking URI : mlruns
+2026-03-30 20:16:07 | INFO     | train_mlflow | MLflow experiment   : Retail_Churn_Prediction
+2026-03-30 20:16:07 | INFO     | train_mlflow | Loading preprocessed data...
+2026-03-30 20:16:08 | INFO     | train_mlflow | X_train: (3497, 103) | X_test: (875, 103)
+2026-03-30 20:16:08 | INFO     | train_mlflow | Churn rate train: 33.26% | test: 33.26%
+2026-03-30 20:16:10 | INFO     | train_mlflow | SMOTE applied: 3497 → 4668 samples
+2026-03-30 20:16:10 | INFO     | train_mlflow | Starting MLflow runs for each model...
+2026-03-30 20:16:13 | INFO     | train_mlflow | [Logistic_Regression] CV ROC-AUC: 0.9997 ± 0.0005
+2026-03-30 20:16:20 | INFO     | train_mlflow | [Random_Forest] CV ROC-AUC: 1.0000 ± 0.0000
+2026-03-30 20:16:26 | INFO     | train_mlflow | [Gradient_Boosting] CV ROC-AUC: 1.0000 ± 0.0000
+2026-03-30 20:16:26 | INFO     | train_mlflow | Best model from CV: Random_Forest (1.0000)
+2026-03-30 20:16:40 | INFO     | train_mlflow | GridSearch best params: {'max_depth': None, 'min_samples_split': 2, 'n_estimators': 100}
+2026-03-30 20:16:40 | INFO     | train_mlflow | GridSearch best CV ROC-AUC: 1.0000
+2026-03-30 20:16:40 | INFO     | train_mlflow | Final MLflow run ID: 669da3afa86b4a1d85f2ad9f781a3dd2
+2026-03-30 20:16:41 | INFO     | train_mlflow | Test ROC-AUC  : 1.0000
+2026-03-30 20:16:41 | INFO     | train_mlflow | Test Accuracy : 1.0000
+2026-03-30 20:16:41 | INFO     | train_mlflow | Test F1       : 1.0000
+2026-03-30 20:16:51 | INFO     | train_mlflow | Model logged to MLflow: models:/m-063cdeb6d822488eb0aa9e6618687882
+2026-03-30 20:16:51 | INFO     | train_mlflow | Model saved locally: models/churn_model.pkl
+2026-03-30 20:31:05 | INFO     | train_mlflow | MLflow tracking URI : mlruns
+2026-03-30 20:31:05 | INFO     | train_mlflow | MLflow experiment   : Retail_Churn_Prediction
+2026-03-30 20:31:05 | INFO     | train_mlflow | Loading preprocessed data...
+2026-03-30 20:31:05 | INFO     | train_mlflow | X_train: (3497, 103) | X_test: (875, 103)
+2026-03-30 20:31:05 | INFO     | train_mlflow | Churn rate train: 33.26% | test: 33.26%
+2026-03-30 20:31:07 | INFO     | train_mlflow | SMOTE applied: 3497 → 4668 samples
+2026-03-30 20:31:07 | INFO     | train_mlflow | Starting MLflow runs for each model...
+2026-03-30 20:31:10 | INFO     | train_mlflow | [Logistic_Regression] CV ROC-AUC: 0.9997 ± 0.0005
+2026-03-30 20:31:13 | INFO     | train_mlflow | [Random_Forest] CV ROC-AUC: 1.0000 ± 0.0000
+2026-03-30 20:31:15 | INFO     | train_mlflow | [Gradient_Boosting] CV ROC-AUC: 1.0000 ± 0.0000
+2026-03-30 20:31:15 | INFO     | train_mlflow | Best model from CV: Random_Forest (1.0000)
+2026-03-30 20:31:19 | INFO     | train_mlflow | GridSearch best params: {'max_depth': None, 'min_samples_split': 2, 'n_estimators': 100}
+2026-03-30 20:31:19 | INFO     | train_mlflow | GridSearch best CV ROC-AUC: 1.0000
+2026-03-30 20:31:19 | INFO     | train_mlflow | Final MLflow run ID: 84b6b42feb324fa588b15a91774caabf
+2026-03-30 20:31:19 | INFO     | train_mlflow | Test ROC-AUC  : 1.0000
+2026-03-30 20:31:19 | INFO     | train_mlflow | Test Accuracy : 1.0000
+2026-03-30 20:31:19 | INFO     | train_mlflow | Test F1       : 1.0000
+2026-03-30 20:31:25 | INFO     | train_mlflow | Model logged to MLflow: models:/m-6f04097d24254dd1bd3829f6a6432bd5
+2026-03-30 20:31:25 | INFO     | train_mlflow | Model saved locally: models/churn_model.pkl
+2026-03-30 21:18:01 | INFO     | train_mlflow | MLflow tracking URI : mlruns
+2026-03-30 21:18:01 | INFO     | train_mlflow | MLflow experiment   : Retail_Churn_Prediction
+2026-03-30 21:18:01 | INFO     | train_mlflow | Loading preprocessed data...
+2026-03-30 21:18:01 | INFO     | train_mlflow | X_train: (3497, 103) | X_test: (875, 103)
+2026-03-30 21:18:01 | INFO     | train_mlflow | Churn rate train: 33.26% | test: 33.26%
+2026-03-30 21:18:07 | INFO     | train_mlflow | SMOTE applied: 3497 → 4668 samples
+2026-03-30 21:18:07 | INFO     | train_mlflow | Starting MLflow runs for each model...
+2026-03-30 21:18:17 | INFO     | train_mlflow | [Logistic_Regression] CV ROC-AUC: 0.9997 ± 0.0005
+2026-03-30 21:18:34 | INFO     | train_mlflow | [Random_Forest] CV ROC-AUC: 1.0000 ± 0.0000
+2026-03-30 21:18:48 | INFO     | train_mlflow | [Gradient_Boosting] CV ROC-AUC: 1.0000 ± 0.0000
+2026-03-30 21:18:48 | INFO     | train_mlflow | Best model from CV: Random_Forest (1.0000)
+2026-03-30 21:19:21 | INFO     | train_mlflow | GridSearch best params: {'max_depth': None, 'min_samples_split': 2, 'n_estimators': 100}
+2026-03-30 21:19:21 | INFO     | train_mlflow | GridSearch best CV ROC-AUC: 1.0000
+2026-03-30 21:19:21 | INFO     | train_mlflow | Final MLflow run ID: 8b2a0b4226c149ed883b767ded5a00e1
+2026-03-30 21:19:22 | INFO     | train_mlflow | Test ROC-AUC  : 1.0000
+2026-03-30 21:19:22 | INFO     | train_mlflow | Test Accuracy : 1.0000
+2026-03-30 21:19:22 | INFO     | train_mlflow | Test F1       : 1.0000
+2026-03-30 21:19:49 | INFO     | train_mlflow | Model logged to MLflow: models:/m-76edb4c815734a09afb472570ff665ab
+2026-03-30 21:19:49 | INFO     | train_mlflow | Model saved locally: models/churn_model.pkl
+2026-03-30 22:36:50 | INFO     | train_mlflow | MLflow tracking URI : mlruns
+2026-03-30 22:36:50 | INFO     | train_mlflow | MLflow experiment   : Retail_Churn_Prediction
+2026-03-30 22:36:50 | INFO     | train_mlflow | Loading preprocessed data...
+2026-03-30 22:36:50 | INFO     | train_mlflow | X_train: (3497, 103) | X_test: (875, 103)
+2026-03-30 22:36:50 | INFO     | train_mlflow | Churn rate train: 33.26% | test: 33.26%
+2026-03-30 22:36:52 | INFO     | train_mlflow | SMOTE applied: 3497 → 4668 samples
+2026-03-30 22:36:52 | INFO     | train_mlflow | Starting MLflow runs for each model...
+2026-03-30 22:36:55 | INFO     | train_mlflow | [Logistic_Regression] CV ROC-AUC: 0.9997 ± 0.0005
+2026-03-30 22:36:59 | INFO     | train_mlflow | [Random_Forest] CV ROC-AUC: 1.0000 ± 0.0000
+2026-03-30 22:37:06 | INFO     | train_mlflow | [Gradient_Boosting] CV ROC-AUC: 1.0000 ± 0.0000
+2026-03-30 22:37:06 | INFO     | train_mlflow | Best model from CV: Random_Forest (1.0000)
+2026-03-30 22:37:15 | INFO     | train_mlflow | GridSearch best params: {'max_depth': None, 'min_samples_split': 2, 'n_estimators': 100}
+2026-03-30 22:37:15 | INFO     | train_mlflow | GridSearch best CV ROC-AUC: 1.0000
+2026-03-30 22:37:15 | INFO     | train_mlflow | Final MLflow run ID: dad027ba77ed4ae7a52547b167f7211d
+2026-03-30 22:37:15 | INFO     | train_mlflow | Test ROC-AUC  : 1.0000
+2026-03-30 22:37:15 | INFO     | train_mlflow | Test Accuracy : 1.0000
+2026-03-30 22:37:15 | INFO     | train_mlflow | Test F1       : 1.0000
+2026-03-30 22:37:22 | INFO     | train_mlflow | Model logged to MLflow: models:/m-37278438e31b459a93fc7c994936fbef
+2026-03-30 22:37:22 | INFO     | train_mlflow | Model saved locally: models/churn_model.pkl
+2026-04-14 00:11:26 | INFO     | monitoring | Loading data and artifacts for monitoring...
+2026-04-14 00:11:27 | INFO     | monitoring | Reference (train): 4668 rows | Current (test): 875 rows
+2026-04-14 00:11:27 | INFO     | monitoring | Using threshold: 0.670
+2026-04-14 00:11:30 | WARNING  | monitoring | Evidently not installed. Run: pip install evidently
+Falling back to simplified monitoring...
+2026-04-14 00:11:30 | INFO     | monitoring | Running simplified drift detection (KS test)...
+2026-04-14 00:20:38 | INFO     | monitoring | Loading data and artifacts for monitoring...
+2026-04-14 00:20:40 | INFO     | monitoring | Reference (train): 3497 rows | Current (test): 875 rows
+2026-04-14 00:20:40 | INFO     | monitoring | Using threshold: 0.670
+2026-04-14 00:20:43 | WARNING  | monitoring | Evidently not installed. Run: pip install evidently
+Falling back to simplified monitoring...
+2026-04-14 00:20:43 | INFO     | monitoring | Running simplified drift detection (KS test)...
+2026-04-14 00:28:20 | INFO     | monitoring | Loading data and artifacts for monitoring...
+2026-04-14 00:28:21 | INFO     | monitoring | Reference (train): 3497 rows | Current (test): 875 rows
+2026-04-14 00:28:21 | INFO     | monitoring | Using threshold: 0.057
+2026-04-14 00:28:24 | WARNING  | monitoring | Evidently not installed. Run: pip install evidently
+Falling back to simplified monitoring...
+2026-04-14 00:28:24 | INFO     | monitoring | Running simplified drift detection (KS test)...
+2026-04-14 15:26:59 | INFO     | monitoring | Loading data and artifacts for monitoring...
+2026-04-14 15:29:05 | INFO     | monitoring | Loading data and artifacts for monitoring...
+2026-04-14 15:29:07 | INFO     | monitoring | Reference (train): 3497 rows | Current (test): 875 rows
+2026-04-14 15:29:07 | INFO     | monitoring | Using threshold: 0.251
+2026-04-14 15:29:09 | WARNING  | monitoring | Evidently not installed. Run: pip install evidently
+Falling back to simplified monitoring...
+2026-04-14 15:29:09 | INFO     | monitoring | Running simplified drift detection (KS test)...
+2026-04-14 17:50:40 | INFO     | monitoring | Loading data and artifacts for monitoring...
+2026-04-14 17:50:42 | INFO     | monitoring | Reference (train): 3497 rows | Current (test): 875 rows
+2026-04-14 17:50:42 | INFO     | monitoring | Using threshold: 0.251
+2026-04-14 17:50:52 | WARNING  | monitoring | Evidently not installed. Run: pip install evidently
+Falling back to simplified monitoring...
+2026-04-14 17:50:52 | INFO     | monitoring | Running simplified drift detection (KS test)...
+2026-04-14 23:18:53 | INFO     | monitoring | Loading data and artifacts for monitoring...
+2026-04-14 23:18:56 | INFO     | monitoring | Reference (train): 3497 rows | Current (test): 875 rows
+2026-04-14 23:18:56 | INFO     | monitoring | Using threshold: 0.251
+2026-04-14 23:19:01 | WARNING  | monitoring | Evidently not installed. Run: pip install evidently
+Falling back to simplified monitoring...
+2026-04-14 23:19:01 | INFO     | monitoring | Running simplified drift detection (KS test)...
+2026-04-15 11:54:54 | INFO     | monitoring | Loading data and artifacts for monitoring...
+2026-04-15 11:54:56 | INFO     | monitoring | Reference (train): 3497 rows | Current (test): 875 rows
+2026-04-15 11:54:56 | INFO     | monitoring | Using threshold: 0.414
+2026-04-15 11:54:59 | WARNING  | monitoring | Evidently not installed. Run: pip install evidently
+Falling back to simplified monitoring...
+2026-04-15 11:54:59 | INFO     | monitoring | Running simplified drift detection (KS test)...
+2026-04-16 23:32:20 | INFO     | monitoring | Loading data and artifacts for monitoring...
+2026-04-16 23:32:22 | INFO     | monitoring | Reference (train): 3497 rows | Current (test): 875 rows
+2026-04-16 23:32:22 | INFO     | monitoring | Using threshold: 0.294
+2026-04-16 23:32:25 | WARNING  | monitoring | Evidently not installed. Run: pip install evidently
+Falling back to simplified monitoring...
+2026-04-16 23:32:25 | INFO     | monitoring | Running simplified drift detection (KS test)...
+2026-04-18 17:34:19 | INFO     | monitoring | Loading data and artifacts for monitoring...
+2026-04-18 17:34:20 | INFO     | monitoring | Reference (train): 3497 rows | Current (test): 875 rows
+2026-04-18 17:34:20 | INFO     | monitoring | Using threshold: 0.294
+2026-04-18 17:34:23 | WARNING  | monitoring | Evidently not installed. Run: pip install evidently
+Falling back to simplified monitoring...
+2026-04-18 17:34:23 | INFO     | monitoring | Running simplified drift detection (KS test)...
+2026-04-19 18:37:52 | INFO     | monitoring | Loading data and artifacts for monitoring...
+2026-04-19 18:37:54 | INFO     | monitoring | Reference (train): 3497 rows | Current (test): 875 rows
+2026-04-19 18:37:54 | INFO     | monitoring | Using threshold: 0.266
+2026-04-19 18:38:04 | WARNING  | monitoring | Evidently not installed. Run: pip install evidently
+Falling back to simplified monitoring...
+2026-04-19 18:38:04 | INFO     | monitoring | Running simplified drift detection (KS test)...
+2026-04-19 22:00:20 | INFO     | monitoring | Loading data and artifacts for monitoring...
+2026-04-19 22:00:21 | INFO     | monitoring | Reference (train): 3497 rows | Current (test): 875 rows
+2026-04-19 22:00:21 | INFO     | monitoring | Using threshold: 0.266
+2026-04-19 22:00:24 | WARNING  | monitoring | Evidently not installed. Run: pip install evidently
+Falling back to simplified monitoring...
+2026-04-19 22:00:24 | INFO     | monitoring | Running simplified drift detection (KS test)...

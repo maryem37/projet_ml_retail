@@ -1,0 +1,14 @@
+artifact_uri: file:///D:/projet_ml_retail/mlruns/702495396605471118/d2f3a4be32994f2dae5870924778e7ac/artifacts
+end_time: 1774906615854
+entry_point_name: ''
+experiment_id: '702495396605471118'
+lifecycle_stage: active
+run_id: d2f3a4be32994f2dae5870924778e7ac
+run_name: CV_Logistic_Regression
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1774906613041
+status: 3
+tags: []
+user_id: MSI

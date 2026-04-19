@@ -1,21 +1,17 @@
 # ==========================================
 # RETAIL ML PROJECT - MAIN PIPELINE RUNNER
 # ==========================================
-# Runs the full ML pipeline in the correct order:
-#   1. Preprocessing
-#   2. Utils (exploration)
-#   3. Clustering
-#   4. Classification (train_model)
-#   5. Regression
-#   6. Optuna tuning
-#   7. Predict (demo)
-#   8. Flask app (web interface)
+# Version PRO avec MLflow, tests, monitoring.
 #
 # Usage:
-#   python main.py             → full pipeline + Flask
-#   python main.py --no-flask  → pipeline only, no Flask
-#   python main.py --no-optuna → skip Optuna (slow)
-#   python main.py --steps 1,3,4 → run only steps 1, 3 and 4
+#   python main.py                    → pipeline complet
+#   python main.py --no-flask         → sans Flask
+#   python main.py --no-optuna        → sans Optuna
+#   python main.py --mlflow           → avec MLflow tracking
+#   python main.py --test             → lance les tests pytest
+#   python main.py --monitor          → lance le monitoring Evidently
+#   python main.py --mlflow-ui        → ouvre l'UI MLflow
+#   python main.py --steps 1,3,4      → etapes specifiques
 # ==========================================
 
 import subprocess
@@ -26,92 +22,33 @@ import argparse
 from datetime import datetime
 
 
-# ==========================================
-# CONFIGURATION
-# ==========================================
-
 STEPS = [
-    {
-        "id"     : 1,
-        "name"   : "Preprocessing",
-        "desc"   : "Clean, encode, engineer features, split data",
-        "script" : "src/preprocessing.py",
-        "required": True,
-    },
-    {
-        "id"     : 2,
-        "name"   : "Utils / Exploration",
-        "desc"   : "Correlation heatmap, PCA, VIF analysis",
-        "script" : "src/utils.py",
-        "required": False,
-    },
-    {
-        "id"     : 3,
-        "name"   : "Clustering",
-        "desc"   : "K-Means customer segmentation",
-        "script" : "src/clustering.py",
-        "required": False,
-    },
-    {
-        "id"     : 4,
-        "name"   : "Classification — Train Model",
-        "desc"   : "Churn prediction with SMOTE + GridSearchCV",
-        "script" : "src/train_model.py",
-        "required": True,
-    },
-    {
-        "id"     : 5,
-        "name"   : "Regression",
-        "desc"   : "Customer spend prediction (MonetaryTotal)",
-        "script" : "src/regression.py",
-        "required": False,
-    },
-    {
-        "id"     : 6,
-        "name"   : "Optuna Tuning",
-        "desc"   : "Bayesian hyperparameter optimization",
-        "script" : "src/tune_optuna.py",
-        "required": False,
-        "slow"   : True,   # flagged as slow — can be skipped
-    },
-    {
-        "id"     : 7,
-        "name"   : "Predict (Demo)",
-        "desc"   : "Single customer prediction test",
-        "script" : "src/predict.py",
-        "required": False,
-    },
-    {
-        "id"     : 8,
-        "name"   : "Flask Web App",
-        "desc"   : "Launch web interface on http://localhost:5000",
-        "script" : "app/app.py",
-        "required": False,
-        "is_server": True,  # runs indefinitely — launched last
-    },
+    { "id": 1,  "name": "Preprocessing",           "script": "src/preprocessing.py",        "required": True  },
+    { "id": 2,  "name": "Utils / Exploration",      "script": "src/utils.py",                "required": False },
+    { "id": 3,  "name": "Clustering",               "script": "src/clustering.py",           "required": False },
+    { "id": 4,  "name": "Classification (MLflow)",  "script": "src/train_model_mlflow.py",   "required": True  },
+    { "id": 5,  "name": "Regression",               "script": "src/regression.py",           "required": False },
+    { "id": 6,  "name": "Optuna Tuning",            "script": "src/tune_optuna.py",          "required": False, "slow": True },
+    { "id": 7,  "name": "Tests (pytest)",           "script": "tests/",                      "required": False, "is_pytest": True },
+    { "id": 8,  "name": "Monitoring (Evidently)",   "script": "src/monitoring.py",           "required": False },
+    { "id": 9,  "name": "Predict (Demo)",           "script": "src/predict.py",              "required": False },
+    { "id": 10, "name": "Flask Web App",            "script": "app/app.py",                  "required": False, "is_server": True },
 ]
 
 
-# ==========================================
-# HELPERS
-# ==========================================
-
-def separator(char="─", width=60):
-    print(char * width)
+def separator(char="─", width=62): print(char * width)
 
 def print_header():
     separator("═")
-    print("  🛍️  RETAIL ML PROJECT — FULL PIPELINE RUNNER")
+    print("  RETAIL ML PROJECT — PRO PIPELINE")
     print(f"  Started : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     separator("═")
-    print()
 
-def print_step_banner(step, index, total):
+def print_step_banner(step, total):
     print()
     separator()
-    print(f"  STEP {step['id']}/{total}  ·  {step['name'].upper()}")
-    print(f"  {step['desc']}")
-    print(f"  Script  : {step['script']}")
+    print(f"  STEP {step['id']}/{total}  .  {step['name'].upper()}")
+    print(f"  Script : {step['script']}")
     separator()
 
 def print_summary(results):
@@ -120,153 +57,127 @@ def print_summary(results):
     print("  PIPELINE SUMMARY")
     separator("═")
     for name, status, duration in results:
-        icon = "✅" if status == "OK" else ("⏭️ " if status == "SKIP" else "❌")
+        icon = {"OK": "OK", "SKIP": "SKIP", "FAIL": "FAIL"}.get(status, "?")
         dur  = f"({duration:.1f}s)" if duration else ""
-        print(f"  {icon}  {name:<35} {dur}")
+        print(f"  [{icon}]  {name:<38} {dur}")
     separator("═")
 
-def open_browser():
-    """Opens browser to localhost:5000 after a short delay."""
-    import threading
-    import webbrowser
-
+def open_browser(url):
+    import threading, webbrowser
     def _open():
-        time.sleep(2)  # wait for Flask to start
-        print("\n  🌐 Opening browser → http://localhost:5000")
-        webbrowser.open("http://localhost:5000")
-
-    t = threading.Thread(target=_open, daemon=True)
-    t.start()
-
-
-# ==========================================
-# RUN A SINGLE STEP
-# ==========================================
+        time.sleep(2)
+        webbrowser.open(url)
+    threading.Thread(target=_open, daemon=True).start()
 
 def run_step(step):
-    """
-    Runs a single pipeline step as a subprocess.
-    Returns (status, duration_seconds).
-    """
-    script = step["script"]
-
-    if not os.path.exists(script):
-        print(f"  ⚠️  Script not found: {script} — skipping.")
+    if not os.path.exists(step["script"]):
+        print(f"  Not found: {step['script']} — skipping.")
         return "SKIP", 0
 
     start = time.time()
 
-    result = subprocess.run(
-        [sys.executable, script],
-        cwd=os.getcwd()
-    )
+    if step.get("is_pytest"):
+        result = subprocess.run(
+            [sys.executable, "-m", "pytest", step["script"], "-v", "--tb=short"],
+            cwd=os.getcwd()
+        )
+    else:
+        result = subprocess.run(
+            [sys.executable, step["script"]],
+            cwd=os.getcwd()
+        )
 
     duration = time.time() - start
+    status   = "OK" if result.returncode == 0 else "FAIL"
+    print(f"\n  [{status}] {step['name']} completed in {duration:.1f}s")
+    return status, duration
 
-    if result.returncode == 0:
-        print(f"\n  ✅ {step['name']} completed in {duration:.1f}s")
-        return "OK", duration
-    else:
-        print(f"\n  ❌ {step['name']} FAILED (exit code {result.returncode})")
-        return "FAIL", duration
-
-
-# ==========================================
-# ARGUMENT PARSER
-# ==========================================
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Retail ML Pipeline Runner",
-        formatter_class=argparse.RawTextHelpFormatter
-    )
+    p = argparse.ArgumentParser(description="Retail ML Pro Pipeline")
+    p.add_argument("--no-flask",     action="store_true", help="No Flask app")
+    p.add_argument("--no-optuna",    action="store_true", help="Skip Optuna")
+    p.add_argument("--mlflow",       action="store_true", help="Use MLflow version of train_model")
+    p.add_argument("--mlflow-ui",    action="store_true", help="Open MLflow UI after pipeline")
+    p.add_argument("--test",         action="store_true", help="Run pytest tests")
+    p.add_argument("--monitor",      action="store_true", help="Run Evidently monitoring")
+    p.add_argument("--steps",        type=str, default=None, help="Run only steps e.g. --steps 1,3,4")
+    p.add_argument("--skip-on-fail", action="store_true", help="Continue on failure")
+    return p.parse_args()
 
-    parser.add_argument(
-        "--no-flask",
-        action="store_true",
-        help="Run pipeline without launching Flask app"
-    )
-
-    parser.add_argument(
-        "--no-optuna",
-        action="store_true",
-        help="Skip Optuna tuning step (can be slow)"
-    )
-
-    parser.add_argument(
-        "--steps",
-        type=str,
-        default=None,
-        help="Run only specific steps (e.g. --steps 1,3,4)"
-    )
-
-    parser.add_argument(
-        "--skip-on-fail",
-        action="store_true",
-        help="Continue pipeline even if a step fails"
-    )
-
-    return parser.parse_args()
-
-
-# ==========================================
-# MAIN
-# ==========================================
 
 def main():
     args = parse_args()
-
     print_header()
 
-    # Filter steps based on arguments
     steps_to_run = STEPS.copy()
 
-    # Filter by --steps flag
-    if args.steps:
-        selected_ids = [int(s.strip()) for s in args.steps.split(",")]
-        steps_to_run = [s for s in steps_to_run if s["id"] in selected_ids]
-        print(f"  Running selected steps: {selected_ids}\n")
+    # Use standard train_model unless --mlflow specified
+    if not args.mlflow:
+        steps_to_run = [
+            {**s, "script": "src/train_model.py", "name": "Classification"}
+            if s["id"] == 4 else s
+            for s in steps_to_run
+        ]
 
-    # Remove Flask if --no-flask
+    # Apply filters
+    if args.steps:
+        ids = [int(x.strip()) for x in args.steps.split(",")]
+        steps_to_run = [s for s in steps_to_run if s["id"] in ids]
+
     if args.no_flask:
         steps_to_run = [s for s in steps_to_run if not s.get("is_server")]
-        print("  ℹ️  Flask app skipped (--no-flask)\n")
 
-    # Remove Optuna if --no-optuna
     if args.no_optuna:
         steps_to_run = [s for s in steps_to_run if s["id"] != 6]
-        print("  ℹ️  Optuna tuning skipped (--no-optuna)\n")
+
+    if not args.test:
+        steps_to_run = [s for s in steps_to_run if not s.get("is_pytest")]
+
+    if not args.monitor:
+        steps_to_run = [s for s in steps_to_run if s["id"] != 8]
 
     total   = len(steps_to_run)
     results = []
+    print(f"  Running {total} steps...\n")
 
-    # Run each step
     for step in steps_to_run:
 
-        # Flask server — launch last and open browser
         if step.get("is_server"):
-            print_step_banner(step, total, total)
-            print("  🌐 Launching Flask web application...")
-            print("  → http://localhost:5000")
-            print("  → Press CTRL+C to stop\n")
-            open_browser()
+            print_step_banner(step, total)
+            print("  Launching Flask app -> http://localhost:5000")
 
-            # Run Flask (blocking — stays running)
+            if args.mlflow_ui:
+                print("  Also launching MLflow UI -> http://localhost:5001")
+                subprocess.Popen(
+                    [sys.executable, "-m", "mlflow", "ui", "--port", "5001"],
+                    cwd=os.getcwd()
+                )
+                time.sleep(1)
+                open_browser("http://localhost:5001")
+
+            open_browser("http://localhost:5000")
             subprocess.run([sys.executable, step["script"]], cwd=os.getcwd())
             results.append((step["name"], "OK", None))
             break
 
-        # Regular step
-        print_step_banner(step, step["id"], total)
+        print_step_banner(step, total)
         status, duration = run_step(step)
         results.append((step["name"], status, duration))
 
-        # Stop pipeline on failure (unless --skip-on-fail)
         if status == "FAIL" and step.get("required") and not args.skip_on_fail:
-            print(f"\n  ❌ Required step '{step['name']}' failed.")
-            print("     Fix the error and re-run, or use --skip-on-fail to continue anyway.")
+            print(f"\n  Required step failed. Use --skip-on-fail to continue.")
             print_summary(results)
             sys.exit(1)
+
+    # Open MLflow UI if requested without Flask
+    if args.mlflow_ui and not any(s.get("is_server") for s in steps_to_run):
+        print("\n  Opening MLflow UI -> http://localhost:5001")
+        open_browser("http://localhost:5001")
+        subprocess.run(
+            [sys.executable, "-m", "mlflow", "ui", "--port", "5001"],
+            cwd=os.getcwd()
+        )
 
     print_summary(results)
 
