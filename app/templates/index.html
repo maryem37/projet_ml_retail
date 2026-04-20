@@ -9,19 +9,20 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --white:   #ffffff;
-      --bg:      #f5f4f0;
-      --card:    #ffffff;
-      --border:  #e2e0da;
-      --text:    #1a1a1a;
-      --muted:   #888580;
-      --accent:  #2c5f8a;
-      --accent2: #c0392b;
-      --green:   #27ae60;
-      --orange:  #e67e22;
-      --radius:  8px;
-      --serif:   'Lora', Georgia, serif;
-      --sans:    'Source Sans 3', sans-serif;
+      --white:    #ffffff;
+      --bg:       #f0f4f9;
+      --card:     #ffffff;
+      --border:   #c8d8ea;
+      --text:     #0d1f33;
+      --muted:    #6b8aaa;
+      --accent:   #1a56a0;
+      --accent2:  #c0392b;
+      --green:    #1a7f4b;
+      --orange:   #c97a1a;
+      --nav:      #0d2b5e;
+      --radius:   8px;
+      --serif:    'Lora', Georgia, serif;
+      --sans:     'Source Sans 3', sans-serif;
     }
 
     body {
@@ -33,10 +34,10 @@
     }
 
     header {
-      background: var(--white);
-      border-bottom: 1px solid var(--border);
+      background: var(--nav);
+      border-bottom: 3px solid #1a56a0;
       padding: 0 40px;
-      height: 60px;
+      height: 62px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -46,38 +47,53 @@
       font-family: var(--serif);
       font-size: 18px;
       font-weight: 600;
-      color: var(--accent);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
+
+    .logo::before { content: "◈"; color: #4d9de0; font-size: 22px; }
 
     .logo span {
-      color: var(--muted);
+      color: #9bbde0;
       font-weight: 400;
-      font-size: 14px;
-      margin-left: 10px;
+      font-size: 13px;
     }
 
-    .header-right { font-size: 12px; color: var(--muted); }
+    .header-right {
+      font-size: 12px;
+      color: #9bbde0;
+      background: rgba(255,255,255,0.08);
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
 
     .page-title {
       text-align: center;
-      padding: 48px 24px 36px;
+      padding: 44px 24px 32px;
+      background: linear-gradient(180deg, #dbe8f5 0%, var(--bg) 100%);
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 32px;
     }
 
     .page-title h1 {
       font-family: var(--serif);
-      font-size: 30px;
+      font-size: 28px;
       font-weight: 600;
+      color: var(--nav);
       margin-bottom: 8px;
     }
 
     .page-title p { font-size: 15px; color: var(--muted); }
 
     .layout {
-      max-width: 960px;
+      max-width: 980px;
       margin: 0 auto;
       padding: 0 24px 60px;
       display: grid;
-      grid-template-columns: 1fr 300px;
+      grid-template-columns: 1fr 308px;
       gap: 24px;
       align-items: start;
     }
@@ -86,30 +102,35 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
+      box-shadow: 0 2px 12px rgba(26,86,160,0.07);
     }
 
     .card-header {
-      padding: 18px 24px;
+      padding: 16px 24px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       gap: 8px;
+      background: linear-gradient(90deg, #f0f4f9, #ffffff);
+      border-radius: var(--radius) var(--radius) 0 0;
     }
 
     .card-header h2 {
       font-family: var(--serif);
       font-size: 15px;
       font-weight: 600;
+      color: var(--nav);
     }
 
     .card-header .badge {
       margin-left: auto;
       font-size: 11px;
-      color: var(--muted);
-      background: var(--bg);
-      padding: 3px 9px;
+      color: var(--accent);
+      background: #e8f0fb;
+      padding: 3px 10px;
       border-radius: 20px;
-      border: 1px solid var(--border);
+      border: 1px solid #c0d4f0;
+      font-weight: 600;
     }
 
     .form-section {
@@ -122,8 +143,10 @@
       font-weight: 600;
       letter-spacing: 1.2px;
       text-transform: uppercase;
-      color: var(--muted);
+      color: var(--accent);
       margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #dce8f5;
     }
 
     .field-row {
@@ -138,7 +161,7 @@
     .field-row:last-child { margin-bottom: 0; }
 
     .field { display: flex; flex-direction: column; gap: 5px; }
-    .field label { font-size: 12px; color: var(--muted); }
+    .field label { font-size: 12px; color: var(--muted); font-weight: 400; }
 
     .field input, .field select {
       border: 1px solid var(--border);
@@ -149,11 +172,14 @@
       color: var(--text);
       background: var(--white);
       outline: none;
-      transition: border-color 0.15s;
+      transition: border-color 0.15s, box-shadow 0.15s;
       width: 100%;
     }
 
-    .field input:focus, .field select:focus { border-color: var(--accent); }
+    .field input:focus, .field select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(26,86,160,0.12);
+    }
 
     .range-row { display: flex; align-items: center; gap: 10px; }
 
@@ -165,21 +191,23 @@
 
     .range-val {
       font-size: 13px; color: var(--accent);
-      font-weight: 600; min-width: 36px; text-align: right;
+      font-weight: 600; min-width: 38px; text-align: right;
     }
 
     .submit-wrap { padding: 20px 24px; }
 
     .btn {
-      width: 100%; padding: 12px;
+      width: 100%; padding: 13px;
       background: var(--accent); color: var(--white);
       font-family: var(--sans); font-size: 14px; font-weight: 600;
       border: none; border-radius: var(--radius);
-      cursor: pointer; transition: background 0.15s;
+      cursor: pointer; transition: background 0.15s, transform 0.1s;
       display: flex; align-items: center; justify-content: center; gap: 8px;
+      letter-spacing: 0.3px;
     }
 
-    .btn:hover { background: #234e73; }
+    .btn:hover { background: #154490; }
+    .btn:active { transform: scale(0.99); }
     .btn:disabled { background: var(--muted); cursor: not-allowed; }
 
     .spinner {
@@ -197,18 +225,19 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
+      box-shadow: 0 2px 12px rgba(26,86,160,0.07);
       position: sticky;
       top: 24px;
       overflow: hidden;
     }
 
     .result-placeholder {
-      padding: 48px 24px;
+      padding: 52px 24px;
       text-align: center;
     }
 
-    .result-placeholder .icon { font-size: 36px; margin-bottom: 12px; opacity: 0.5; }
-    .result-placeholder p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .result-placeholder .icon { font-size: 38px; margin-bottom: 14px; opacity: 0.45; }
+    .result-placeholder p { font-size: 13px; color: var(--muted); line-height: 1.7; }
 
     .result-body { display: none; }
 
@@ -216,15 +245,17 @@
       padding: 28px 24px 20px;
       text-align: center;
       border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, #f0f4f9, #ffffff);
     }
 
-    .verdict-icon { font-size: 36px; margin-bottom: 8px; }
+    .verdict-icon { font-size: 38px; margin-bottom: 8px; }
 
     .verdict-name {
       font-family: var(--serif);
       font-size: 26px;
       font-weight: 600;
       margin-bottom: 6px;
+      color: var(--nav);
     }
 
     .verdict-tag {
@@ -233,13 +264,13 @@
       font-weight: 600;
       letter-spacing: 1px;
       text-transform: uppercase;
-      padding: 4px 12px;
+      padding: 4px 13px;
       border-radius: 20px;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
 
     .prob-wrap {
-      background: var(--bg);
+      background: #dce8f5;
       border-radius: 4px;
       height: 8px;
       overflow: hidden;
@@ -256,31 +287,29 @@
     .prob-label { font-size: 12px; color: var(--muted); }
 
     .cluster-badge {
-      margin: 14px 24px 0;
-      padding: 12px 16px;
+      margin: 14px 20px 0;
+      padding: 11px 15px;
       border-radius: var(--radius);
       border: 1px solid var(--border);
-      background: var(--bg);
+      background: #f0f4f9;
       display: none;
     }
 
     .cluster-badge-inner { display: flex; align-items: center; gap: 10px; }
-
     .cluster-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-
     .cluster-text { font-size: 13px; }
-    .cluster-text strong { font-weight: 600; }
+    .cluster-text strong { font-weight: 600; color: var(--nav); }
     .cluster-text small { font-size: 11px; color: var(--muted); display: block; }
 
     .result-metrics {
-      padding: 18px 24px;
+      padding: 16px 24px;
       border-bottom: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 11px;
     }
 
-    .metric { display: flex; justify-content: space-between; font-size: 13px; }
+    .metric { display: flex; justify-content: space-between; font-size: 13px; align-items: center; }
     .metric-key { color: var(--muted); }
     .metric-value { font-weight: 600; }
 
@@ -288,23 +317,34 @@
     .rec-label {
       font-size: 11px; font-weight: 600;
       letter-spacing: 1px; text-transform: uppercase;
-      color: var(--muted); margin-bottom: 8px;
+      color: var(--accent); margin-bottom: 8px;
     }
-    .rec-body { font-size: 13px; line-height: 1.65; }
+    .rec-body { font-size: 13px; line-height: 1.65; color: var(--text); }
 
     .green  { color: var(--green); }
     .orange { color: var(--orange); }
     .red    { color: var(--accent2); }
 
-    .tag-green  { background: #eafaf1; color: var(--green);   border: 1px solid #a9dfbf; }
-    .tag-orange { background: #fef9e7; color: var(--orange);  border: 1px solid #f9e4b7; }
+    .tag-green  { background: #e6f4ee; color: var(--green);   border: 1px solid #a8d8bc; }
+    .tag-orange { background: #fdf3e3; color: var(--orange);  border: 1px solid #f0c980; }
     .tag-red    { background: #fdedec; color: var(--accent2); border: 1px solid #f5b7b1; }
+
+    .toast {
+      display: none;
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #0d2b5e; color: #fff;
+      padding: 12px 24px; border-radius: 6px;
+      font-size: 13px; z-index: 9999;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      max-width: 90vw; text-align: center;
+    }
 
     footer {
       text-align: center; padding: 20px;
       font-size: 12px; color: var(--muted);
       border-top: 1px solid var(--border);
-      background: var(--white);
+      background: var(--nav);
+      color: #9bbde0;
     }
 
     @media (max-width: 720px) {
@@ -341,7 +381,7 @@
       <div class="field-row">
         <div class="field">
           <label>Frequency (orders)</label>
-          <input type="number" id="frequency" value="5" min="1" max="50"/>
+          <input type="number" id="frequency" value="5" min="1" max="500"/>
         </div>
         <div class="field">
           <label>Monetary Total (£)</label>
@@ -453,7 +493,7 @@
 
     <div class="submit-wrap">
       <button class="btn" onclick="runPrediction()" id="predict-btn">
-        <span id="btn-text">Predict Churn</span>
+        <span id="btn-text">⚡ Predict Churn</span>
         <div class="spinner" id="spinner"></div>
       </button>
     </div>
@@ -525,11 +565,24 @@
 
 </div>
 
+<div class="toast" id="toast"></div>
+
 <footer>
   Churn Predictor · GI2 Machine Learning Workshop · Flask + scikit-learn · Gradient Boosting
 </footer>
 
 <script>
+  // ✅ FIX: Always point to Flask on port 5000, regardless of how the HTML is served.
+  // Never use window.location because Live Server runs on 5500, not 5000.
+  const FLASK_URL = "http://127.0.0.1:5000";
+
+  function showToast(msg, duration = 4000) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    setTimeout(() => { t.style.display = 'none'; }, duration);
+  }
+
   async function runPrediction() {
     const btn     = document.getElementById('predict-btn');
     const btnText = document.getElementById('btn-text');
@@ -575,16 +628,29 @@
     };
 
     try {
-      const res  = await fetch('/predict', {
+      const res = await fetch(`${FLASK_URL}/predict`, {
         method : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body   : JSON.stringify(payload),
       });
+
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        const raw = await res.text();
+        throw new Error(`Server returned non-JSON (status ${res.status}): ${raw.slice(0, 120)}`);
+      }
+
       const data = await res.json();
       if (data.success) showResult(data.result);
-      else alert('Prediction error: ' + data.error);
+      else showToast('Prediction error: ' + data.error);
+
     } catch (e) {
-      alert('Connection error: ' + e.message);
+      if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
+        showToast('❌ Cannot reach Flask server. Make sure python app.py is running on http://127.0.0.1:5000');
+      } else {
+        showToast('❌ ' + e.message);
+      }
+      console.error(e);
     } finally {
       btn.disabled          = false;
       btnText.style.display = 'inline';
@@ -600,15 +666,15 @@
     const ret  = +(100 - prob).toFixed(1);
 
     const cls = {
-      'Faible'  : { text: 'green',  tag: 'tag-green',  bar: '#27ae60', icon: '✅' },
-      'Moyen'   : { text: 'orange', tag: 'tag-orange', bar: '#e67e22', icon: '⚠️' },
+      'Faible'  : { text: 'green',  tag: 'tag-green',  bar: '#1a7f4b', icon: '✅' },
+      'Moyen'   : { text: 'orange', tag: 'tag-orange', bar: '#c97a1a', icon: '⚠️' },
       'Élevé'   : { text: 'red',    tag: 'tag-red',    bar: '#c0392b', icon: '🚨' },
-      'Critique': { text: 'red',    tag: 'tag-red',    bar: '#922b21', icon: '🔴' },
-    }[r.risk_level] || { text: 'green', tag: 'tag-green', bar: '#27ae60', icon: '✅' };
+      'Critique': { text: 'red',    tag: 'tag-red',    bar: '#7b241c', icon: '🔴' },
+    }[r.risk_level] || { text: 'green', tag: 'tag-green', bar: '#1a7f4b', icon: '✅' };
 
-    document.getElementById('verdict-icon').textContent       = cls.icon;
-    document.getElementById('verdict-name').textContent       = r.label;
-    document.getElementById('verdict-name').className         = 'verdict-name ' + cls.text;
+    document.getElementById('verdict-icon').textContent = cls.icon;
+    document.getElementById('verdict-name').textContent = r.label;
+    document.getElementById('verdict-name').className   = 'verdict-name';
 
     const tag = document.getElementById('verdict-tag');
     tag.textContent = r.risk_level + ' Risk';
@@ -619,21 +685,20 @@
     setTimeout(() => { bar.style.width = prob + '%'; }, 80);
     document.getElementById('prob-label').textContent = prob + '% churn probability';
 
-    document.getElementById('m-prob').textContent   = prob + '%';
-    document.getElementById('m-prob').className     = 'metric-value ' + cls.text;
-    document.getElementById('m-ret').textContent    = ret + '%';
-    document.getElementById('m-risk').textContent   = r.risk_level;
-    document.getElementById('m-risk').className     = 'metric-value ' + cls.text;
+    document.getElementById('m-prob').textContent = prob + '%';
+    document.getElementById('m-prob').className   = 'metric-value ' + cls.text;
+    document.getElementById('m-ret').textContent  = ret + '%';
+    document.getElementById('m-risk').textContent = r.risk_level;
+    document.getElementById('m-risk').className   = 'metric-value ' + cls.text;
     document.getElementById('m-thresh').textContent = (r.threshold * 100).toFixed(1) + '%';
     document.getElementById('m-pred').textContent   = r.prediction === 1 ? 'Will Churn' : 'Will Stay';
-    document.getElementById('m-pred').className     = 'metric-value ' + cls.text;
+    document.getElementById('m-pred').className     = 'metric-value ' + (r.prediction === 1 ? 'red' : 'green');
 
     if (r.cluster_label) {
       const badge = document.getElementById('cluster-badge');
       badge.style.display = 'block';
       document.getElementById('cluster-dot').style.background = r.cluster_color;
-      document.getElementById('cluster-name').textContent =
-        r.cluster_emoji + '  ' + r.cluster_label;
+      document.getElementById('cluster-name').textContent = r.cluster_emoji + '  ' + r.cluster_label;
     }
 
     const recs = {

@@ -8,9 +8,16 @@ import numpy as np
 import joblib
 import os
 import sys
-import ipaddress
 
 app = Flask(__name__)
+
+@app.after_request
+def add_cors(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    return response
+
 
 # ==========================================
 # LOAD ARTIFACTS AT STARTUP
@@ -56,7 +63,6 @@ try:
 except FileNotFoundError:
     print("  ⚠️  kmeans_model.pkl not found — clustering disabled")
 
-# Cluster labels matching the actual clustering.py output
 CLUSTER_NAMES = {
     0: {"label": "Occasional",  "emoji": "🔵", "color": "#2c5f8a"},
     1: {"label": "At Risk",     "emoji": "🟠", "color": "#e67e22"},
@@ -67,7 +73,7 @@ print(f"  ✅ Flask app loaded  |  threshold={THRESHOLD:.3f}  |  PCA={USE_PCA}")
 
 
 # ==========================================
-# PREPROCESSING — mirrors predict.py exactly
+# PREPROCESSING
 # ==========================================
 
 OHE_CATEGORIES = {
@@ -211,7 +217,7 @@ def _preprocess_input(df):
             [df_out, pd.DataFrame(0, index=df_out.index, columns=missing_final)], axis=1
         )
     df_out = df_out[expected_columns]
-    return df_out, df_scaled   # return both: df_out for model, df_scaled for clustering
+    return df_out, df_scaled
 
 
 # ==========================================
@@ -225,14 +231,12 @@ def predict_churn(input_dict):
     probability = float(pipeline.predict_proba(df_model)[0][1])
     prediction  = int(probability >= THRESHOLD)
 
-    # Cluster on the 11 interpretable features (already scaled in df_sc)
     cluster_id   = None
     cluster_info = None
     if CLUSTER_AVAILABLE:
         cluster_cols = [c for c in CLUSTERING_FEATURES if c in df_sc.columns]
         X_cluster    = df_sc[cluster_cols].fillna(0)
 
-        # Pad or trim to match kmeans expected feature count
         while X_cluster.shape[1] < kmeans.n_features_in_:
             X_cluster[f"_pad_{X_cluster.shape[1]}"] = 0
         X_cluster = X_cluster.iloc[:, :kmeans.n_features_in_]
@@ -269,10 +273,16 @@ def index():
     return render_template("index.html", cluster_available=CLUSTER_AVAILABLE)
 
 
-@app.route("/predict", methods=["POST"])
+@app.route("/predict", methods=["POST", "OPTIONS"])
 def predict():
+    # Handle CORS preflight
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
     try:
-        data = request.get_json()
+        data = request.get_json(force=True, silent=True)
+        if data is None:
+            return jsonify({"success": False, "error": "Invalid JSON body"}), 400
 
         customer = {
             "Frequency"               : float(data.get("frequency", 1)),
