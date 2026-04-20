@@ -52,12 +52,12 @@ print("Parsing RegistrationDate...")
 
 if "RegistrationDate" in df.columns:
     df["RegistrationDate"] = pd.to_datetime(
-        df["RegistrationDate"],
-        dayfirst=False,   # handles ISO + US formats; UK dates inferred correctly
-        errors="coerce"   # NaT for unparseable values
-    )
+    df["RegistrationDate"],
+    format="mixed",   # ✅ replaces dayfirst=False — suppresses the warning
+    dayfirst=False,
+    errors="coerce"
+)
 
-    df["RegYear"]    = df["RegistrationDate"].dt.year
     df["RegMonth"]   = df["RegistrationDate"].dt.month
     df["RegDay"]     = df["RegistrationDate"].dt.day
     df["RegWeekday"] = df["RegistrationDate"].dt.weekday   # 0=Mon, 6=Sun
@@ -66,8 +66,7 @@ if "RegistrationDate" in df.columns:
     if n_nat > 0:
         print(f"  ⚠️  {n_nat} unparseable dates → NaT (will be imputed post-split)")
 
-    print(f"  ✅ Extracted: RegYear, RegMonth, RegDay, RegWeekday")
-    print(f"     RegYear range : {df['RegYear'].min():.0f} – {df['RegYear'].max():.0f}")
+    print(f"  ✅ Extracted: RegMonth, RegDay, RegWeekday (RegYear skipped — redundant)")
 
     df = df.drop(columns=["RegistrationDate"])
     print(f"  ✅ RegistrationDate dropped after extraction")
@@ -153,7 +152,12 @@ columns_to_drop = [
     "MonetaryMin",           # Highly entangled cluster
     "MinQuantity",           # Highly entangled cluster
     "MaxQuantity",           # Highly entangled cluster (Keeping MonetaryMax)
-    "RegYear",               # Perfectly inversely correlated with CustomerTenureDays
+     # RegYear: never extracted — see RegistrationDate block above
+    # PreferredMonth: temporal leakage — in a snapshot dataset it encodes
+    # time-since-last-activity rather than genuine behaviour. The surrogate
+    # tree confirmed this: PreferredMonth ≤ 8.5 → 91.4% churn on the RIGHT
+    # branch, which means "purchased mainly after August = churned by cutoff".
+    "PreferredMonth",
 ]
 
 df = df.drop(columns=columns_to_drop, errors="ignore")

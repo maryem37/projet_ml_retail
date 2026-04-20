@@ -1,25 +1,22 @@
 Source : Surrogate DecisionTreeClassifier — fitted on Gradient Boosting calibrated predictions (max_depth=3)
 Model  : Gradient Boosting
 
-|--- PreferredMonth <= 0.2581
-|   |--- CustomerTenureDays <= 0.3052
-|   |   |--- CustomerTenureDays <= -0.6228
-|   |   |   |--- weights: [1.0000, 676.0000] class: 1
-|   |   |--- CustomerTenureDays >  -0.6228
-|   |   |   |--- weights: [88.0000, 270.0000] class: 1
-|   |--- CustomerTenureDays >  0.3052
-|   |   |--- CustomerTenureDays <= 0.6283
-|   |   |   |--- weights: [80.0000, 70.0000] class: 0
-|   |   |--- CustomerTenureDays >  0.6283
-|   |   |   |--- weights: [477.0000, 31.0000] class: 0
-|--- PreferredMonth >  0.2581
+|--- CustomerTenureDays <= 0.4179
 |   |--- FavoriteSeason_Hiver <= 0.6783
-|   |   |--- PreferredMonth <= 0.5462
-|   |   |   |--- weights: [363.0000, 23.0000] class: 0
-|   |   |--- PreferredMonth >  0.5462
-|   |   |   |--- weights: [1034.0000, 0.0000] class: 0
+|   |   |--- FavoriteSeason_Printemps <= 0.7594
+|   |   |   |--- weights: [1009.0000, 331.0000] class: 0
+|   |   |--- FavoriteSeason_Printemps >  0.7594
+|   |   |   |--- weights: [31.0000, 424.0000] class: 1
 |   |--- FavoriteSeason_Hiver >  0.6783
-|   |   |--- CustomerTenureDays <= 1.0416
-|   |   |   |--- weights: [14.0000, 218.0000] class: 1
-|   |   |--- CustomerTenureDays >  1.0416
-|   |   |   |--- weights: [152.0000, 0.0000] class: 0
+|   |   |--- weights: [0.0000, 411.0000] class: 1
+|--- CustomerTenureDays >  0.4179
+|   |--- CustomerTenureDays <= 0.7034
+|   |   |--- FavoriteSeason_Hiver <= 0.6783
+|   |   |   |--- weights: [193.0000, 9.0000] class: 0
+|   |   |--- FavoriteSeason_Hiver >  0.6783
+|   |   |   |--- weights: [3.0000, 40.0000] class: 1
+|   |--- CustomerTenureDays >  0.7034
+|   |   |--- UniqueProducts <= -0.6824
+|   |   |   |--- weights: [1.0000, 1.0000] class: 0
+|   |   |--- UniqueProducts >  -0.6824
+|   |   |   |--- weights: [1038.0000, 6.0000] class: 0

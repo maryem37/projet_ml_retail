@@ -72,13 +72,45 @@ y_all = pd.concat([y_train, y_test], ignore_index=True)   # ✅ reset_index via 
 print(f"  Total customers for clustering : {len(X_all)}")
 
 # Use only numeric columns (already scaled by StandardScaler)
-numeric_cols = X_all.select_dtypes(include=["int64", "float64"]).columns.tolist()
-X_num        = X_all[numeric_cols].fillna(0)
+# AFTER
+CLUSTERING_FEATURES = [
+    "Frequency",
+    "MonetaryTotal",
+    "CustomerTenureDays",
+    "ReturnRatio",
+    "CancelledTransactions",
+    "UniqueProducts",
+    "SupportTicketsCount",
+    "EngagementScore",
+    "DisengagementScore",
+    "AvgBasketValue",
+    "Country_TargetEnc",
+]
+clustering_cols = [c for c in CLUSTERING_FEATURES if c in X_all.columns]
+X_num           = X_all[clustering_cols].fillna(0)
+
+# Re-scale ONLY these columns (they're already StandardScaler-transformed,
+# but now we're subsetting so the relative scale is preserved — no re-scaling needed)
+print(f"  Clustering on {len(clustering_cols)} interpretable features: {clustering_cols}")
 
 print(f"  Numeric features used          : {X_num.shape[1]}")
 print(f"  Note: features are StandardScaler-transformed (mean=0, std=1)")
 
+# Remove outliers before clustering.
+# Customers with any feature beyond 4 standard deviations are data anomalies
+# that K-Means will isolate into their own tiny clusters (as seen with
+# Cluster 2: 13 customers with CancelledTransactions=97, UniqueProducts=613,
+# and Cluster 3: 53 customers with negative MonetaryTotal in original scale).
+# These clusters have no business meaning and distort the main segmentation.
+z_scores      = np.abs(X_num)                          # already StandardScaler-transformed → z-scores
+outlier_mask  = (z_scores > 4).any(axis=1)
+n_outliers    = outlier_mask.sum()
+print(f"  Outliers removed (|z| > 4)     : {n_outliers} customers")
 
+X_num  = X_num[~outlier_mask].reset_index(drop=True)
+y_all  = y_all[~outlier_mask].reset_index(drop=True)
+X_all  = X_all[~outlier_mask].reset_index(drop=True)
+print(f"  Customers after outlier removal: {len(X_num)}")
 # ==========================================
 # 2️⃣ ELBOW METHOD — Find optimal K
 # ==========================================
@@ -105,11 +137,11 @@ for k in k_range:
 # deltas[i] = inertia[i] - inertia[i+1]  → biggest delta at index i
 # → elbow is at k_range[i+1] (the K that caused the drop)
 # Example: if biggest drop is between K=3 and K=4, elbow = K=4
-deltas    = [inertias[i] - inertias[i+1] for i in range(len(inertias)-1)]
-drop_idx  = deltas.index(max(deltas))           # index of biggest drop
-elbow_k   = list(k_range)[drop_idx + 1]         # ✅ K where drop happens
+k_list        = list(k_range)
+deltas        = [inertias[i] - inertias[i+1] for i in range(len(inertias) - 1)]
+drop_idx      = deltas.index(max(deltas))        # index where biggest drop starts
+elbow_k       = k_list[drop_idx + 1]             # K at the bottom of that drop
 elbow_inertia = inertias[drop_idx + 1]
-
 # --- Plot elbow curve ---
 plt.figure(figsize=(9, 5))
 plt.plot(list(k_range), inertias,
@@ -156,6 +188,17 @@ for k in range(2, 8):
 
 best_k_sil = max(sil_scores, key=sil_scores.get)
 print(f"\n  Best K from silhouette : {best_k_sil}  (score={sil_scores[best_k_sil]:.4f})")
+# After computing best_k_sil...
+
+# ✅ FIX: if all silhouette scores are low (< 0.25), 
+#         clusters are weak regardless — prefer elbow K for richer segmentation
+MAX_SIL = max(sil_scores.values())
+if MAX_SIL < 0.25 or best_k_sil == 2:
+    # Silhouette is weak — elbow gives more business-meaningful segments
+    FINAL_K = max(elbow_k, 3)   # at least 3 segments for business use
+    print(f"  ⚠️  Silhouette scores weak (max={MAX_SIL:.3f}) — using K={FINAL_K} (elbow/floor)")
+else:
+    FINAL_K = best_k_sil
 
 # --- Plot silhouette scores ---
 plt.figure(figsize=(8, 4))
@@ -179,7 +222,6 @@ plt.close()
 print("  ✅ Silhouette scores saved → reports/silhouette_scores.png")
 
 # Select final K (silhouette is more reliable than elbow heuristic)
-FINAL_K = best_k_sil
 print(f"\n  Final K selected : {FINAL_K}")
 
 
@@ -205,6 +247,15 @@ for c, n in zip(unique, counts):
     print(f"    Cluster {c} : {n} customers  ({pct:.1f}%)")
 
 joblib.dump(kmeans, "models/kmeans_model.pkl")
+# ==========================================
+# 🔍 SILHOUETTE ANALYSIS (DETAILED)
+# ==========================================
+
+from sklearn.metrics import silhouette_samples
+import matplotlib.pyplot as plt
+import numpy as np
+
+sil_values = silhouette_samples(X_num, cluster_labels)
 print("  ✅ models/kmeans_model.pkl saved")
 
 
@@ -278,12 +329,21 @@ print("  ✅ reports/clusters_pca2d.png saved")
 
 print("\nProfiling clusters (inverse-scaling for readability)...")
 
-# Inverse-transform numeric columns back to original scale
-scaler_cols = list(scaler.feature_names_in_)
-common_cols = [c for c in scaler_cols if c in X_num.columns]
+# Inverse-transform each clustering column individually.
+# We cannot pass the full scaler.inverse_transform() because it expects
+# all 54 columns it was fitted on. Instead we manually apply:
+#   original_value = scaled_value * std + mean
+# using the scaler's stored mean_ and scale_ arrays.
+scaler_cols  = list(scaler.feature_names_in_)   # all 54 column names
+X_inv        = X_num.copy()
 
-X_inv               = X_num.copy()
-X_inv[common_cols]  = scaler.inverse_transform(X_num[common_cols])
+for col in X_num.columns:
+    if col in scaler_cols:
+        idx            = scaler_cols.index(col)
+        mean_val       = scaler.mean_[idx]
+        std_val        = scaler.scale_[idx]
+        X_inv[col]     = X_num[col] * std_val + mean_val
+    # if col not in scaler_cols it was never scaled — leave as-is
 
 # Build profile dataframe
 X_profile            = X_inv.copy()
@@ -297,7 +357,6 @@ CANDIDATE_PROFILE_FEATURES = [
     "Frequency",
     "MonetaryTotal",
     "CustomerTenureDays",
-    "SatisfactionScore",       # ✅ was "Satisfaction" → wrong name
     "ReturnRatio",
     "CancelledTransactions",
     "UniqueProducts",
@@ -403,43 +462,46 @@ print("  ✅ reports/cluster_churn_rate.png saved")
 print("\nInterpreting clusters...")
 
 cluster_names = {}
+used_labels   = set()   # prevent duplicate names across clusters
 
-# Get frequency and monetary means if they exist
-has_freq = "Frequency" in profile_agg.columns
-has_mon  = "MonetaryTotal" in profile_agg.columns
+has_freq = "Frequency"       in profile_agg.columns
+has_mon  = "MonetaryTotal"   in profile_agg.columns
 has_eng  = "EngagementScore" in profile_agg.columns
 
-freq_median = profile_agg["Frequency"].median()    if has_freq else 0
+freq_median = profile_agg["Frequency"].median()     if has_freq else 0
 mon_median  = profile_agg["MonetaryTotal"].median() if has_mon  else 0
 
-for i in range(FINAL_K):
+# Sort clusters by churn rate descending so highest-risk gets named first
+# and the labels are assigned in a meaningful priority order.
+sorted_clusters = profile_agg["Churn"].sort_values(ascending=False).index.tolist()
+
+LABEL_PRIORITY = [
+    # (condition_fn,  label,        description)
+    (lambda r, f, m: r > 60,                       "Lost / Churned", "Very high churn, low engagement"),
+    (lambda r, f, m: r > 35,                       "At Risk",        "Above-average churn, moderate activity"),
+    (lambda r, f, m: f > freq_median and m > mon_median, "Champions", "High frequency + high spend, low churn"),
+    (lambda r, f, m: f > freq_median,              "Loyal",          "Frequent buyers, moderate spend"),
+    (lambda r, f, m: True,                         "Occasional",     "Low frequency, variable spend"),
+]
+
+for i in sorted_clusters:
     churn_rate = churn_per_cluster[i]
-    frequency  = profile_agg.loc[i, "Frequency"]    if has_freq else 0
-    monetary   = profile_agg.loc[i, "MonetaryTotal"] if has_mon  else 0
-    engagement = profile_agg.loc[i, "EngagementScore"] if has_eng else 0
+    frequency  = profile_agg.loc[i, "Frequency"]      if has_freq else 0
+    monetary   = profile_agg.loc[i, "MonetaryTotal"]   if has_mon  else 0
 
-    # ✅ FIX: naming logic uses Frequency + Monetary + churn rate
-    #         no longer references Recency
-    if churn_rate > 60:
-        name = f"Cluster {i} — Lost / Churned"
-        desc = "Very high churn, low engagement"
-    elif churn_rate > 35:
-        name = f"Cluster {i} — At Risk"
-        desc = "Above-average churn, moderate activity"
-    elif frequency > freq_median and monetary > mon_median:
-        name = f"Cluster {i} — Champions"
-        desc = "High frequency + high spend, low churn"
-    elif frequency > freq_median:
-        name = f"Cluster {i} — Loyal"
-        desc = "Frequent buyers, moderate spend"
+    for condition, label, desc in LABEL_PRIORITY:
+        if condition(churn_rate, frequency, monetary) and label not in used_labels:
+            cluster_names[i] = f"Cluster {i} — {label}"
+            used_labels.add(label)
+            break
     else:
-        name = f"Cluster {i} — Occasional"
-        desc = "Low frequency, variable spend"
-
-    cluster_names[i] = name
+        # Fallback if all preferred labels are taken
+        cluster_names[i] = f"Cluster {i} — Segment {i}"
+        desc = "No distinct label available"
     size = counts[i]
+    name = cluster_names[i]
     print(f"  {name}")
-    print(f"    → {desc}  |  Churn: {churn_rate:.1f}%  |  Size: {size} customers")
+    print(f"    → Churn: {churn_per_cluster[i]:.1f}%  |  Size: {counts[i]} customers")
     print()
 
 
@@ -474,7 +536,8 @@ print("\n" + "="*55)
 print("  CLUSTERING COMPLETE")
 print("="*55)
 print(f"  Algorithm   : K-Means")
-print(f"  K selected  : {FINAL_K} clusters  (silhouette method)")
+k_method = "silhouette" if FINAL_K == best_k_sil else f"elbow override (sil. weak, max={MAX_SIL:.3f})"
+print(f"  K selected  : {FINAL_K} clusters  ({k_method})")
 print(f"  Dataset     : {len(X_all)} customers")
 print(f"  Elbow K     : {elbow_k}  |  Silhouette K: {best_k_sil}")
 print(f"\n  Cluster summary:")

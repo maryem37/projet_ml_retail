@@ -1,3 +1,4 @@
 Cluster,Frequency,MonetaryTotal,CustomerTenureDays,ReturnRatio,CancelledTransactions,UniqueProducts,SupportTicketsCount,EngagementScore,DisengagementScore,AvgBasketValue,Country_TargetEnc,Churn
-0,1.451,6.42,135.869,0.037,2.279,62.499,1.966,0.382,0.265,5.001,0.331,0.338
-1,1.435,6.483,130.912,0.027,1.795,59.928,1.971,0.386,0.207,5.065,0.331,0.327
+0,1.425,6.513,146.62,0.026,0.813,45.662,1.961,0.05,0.107,5.094,0.331,0.304
+1,0.731,5.515,0.126,0.004,0.083,22.249,1.954,1.03,0.013,4.791,0.331,0.561
+2,2.407,8.029,294.49,0.032,4.849,129.387,1.94,0.042,0.517,5.625,0.329,0.046

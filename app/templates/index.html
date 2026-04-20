@@ -138,7 +138,6 @@
     .field-row:last-child { margin-bottom: 0; }
 
     .field { display: flex; flex-direction: column; gap: 5px; }
-
     .field label { font-size: 12px; color: var(--muted); }
 
     .field input, .field select {
@@ -169,7 +168,7 @@
       font-weight: 600; min-width: 36px; text-align: right;
     }
 
-    .submit-wrap { padding: 20px 24px; border-top: 1px solid var(--border); }
+    .submit-wrap { padding: 20px 24px; }
 
     .btn {
       width: 100%; padding: 12px;
@@ -194,7 +193,6 @@
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* RESULT CARD */
     .result-card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -257,7 +255,6 @@
 
     .prob-label { font-size: 12px; color: var(--muted); }
 
-    /* CLUSTER BADGE */
     .cluster-badge {
       margin: 14px 24px 0;
       padding: 12px 16px;
@@ -267,17 +264,9 @@
       display: none;
     }
 
-    .cluster-badge-inner {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .cluster-badge-inner { display: flex; align-items: center; gap: 10px; }
 
-    .cluster-dot {
-      width: 10px; height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
+    .cluster-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
     .cluster-text { font-size: 13px; }
     .cluster-text strong { font-weight: 600; }
@@ -330,7 +319,7 @@
 
 <header>
   <div class="logo">Churn Predictor <span>GI2 · ML Workshop</span></div>
-  <div class="header-right">Random Forest · K-Means · scikit-learn</div>
+  <div class="header-right">Gradient Boosting · K-Means · scikit-learn</div>
 </header>
 
 <div class="page-title">
@@ -340,66 +329,41 @@
 
 <div class="layout">
 
-  <!-- FORM -->
   <div class="card">
     <div class="card-header">
       <h2>Customer Data</h2>
-      <span class="badge">20 fields</span>
+      <span class="badge">16 fields</span>
     </div>
 
-    <!-- RFM -->
+    <!-- PURCHASE BEHAVIOUR -->
     <div class="form-section">
-      <div class="section-label">RFM — Purchase Behaviour</div>
+      <div class="section-label">Purchase Behaviour</div>
       <div class="field-row">
-        <div class="field">
-          <label>Recency (days)</label>
-          <input type="number" id="recency" value="30" min="0" max="400"/>
-        </div>
         <div class="field">
           <label>Frequency (orders)</label>
           <input type="number" id="frequency" value="5" min="1" max="50"/>
         </div>
         <div class="field">
           <label>Monetary Total (£)</label>
-          <input type="number" id="monetary" value="350"/>
-        </div>
-      </div>
-      <div class="field-row">
-        <div class="field">
-          <label>Avg Order Value (£)</label>
-          <input type="number" id="monetary_avg" value="70"/>
-        </div>
-        <div class="field">
-          <label>Spending Category</label>
-          <select id="spending_cat">
-            <option value="0">Low</option>
-            <option value="1" selected>Medium</option>
-            <option value="2">High</option>
-            <option value="3">VIP</option>
-          </select>
+          <input type="number" id="monetary" value="350" min="0"/>
         </div>
         <div class="field">
           <label>Customer Tenure (days)</label>
           <input type="number" id="tenure" value="365" min="0" max="730"/>
         </div>
       </div>
-    </div>
-
-    <!-- BEHAVIOUR -->
-    <div class="form-section">
-      <div class="section-label">Behaviour & Engagement</div>
       <div class="field-row">
         <div class="field">
-          <label>Total Quantity</label>
-          <input type="number" id="total_quantity" value="50"/>
-        </div>
-        <div class="field">
           <label>Unique Products</label>
-          <input type="number" id="unique_products" value="10"/>
+          <input type="number" id="unique_products" value="10" min="1"/>
         </div>
         <div class="field">
           <label>Cancelled Transactions</label>
           <input type="number" id="cancelled" value="0" min="0"/>
+        </div>
+        <div class="field">
+          <label>Avg Days Between Purchases</label>
+          <input type="number" id="avg_days_between" value="30" min="0" max="365"/>
         </div>
       </div>
       <div class="field-row two">
@@ -412,27 +376,13 @@
           </div>
         </div>
         <div class="field">
-          <label>Satisfaction (0–5)</label>
-          <div class="range-row">
-            <input type="range" id="satisfaction" min="0" max="5" step="0.5" value="3.5"
-              oninput="document.getElementById('sat_val').textContent=this.value"/>
-            <span class="range-val" id="sat_val">3.5</span>
-          </div>
-        </div>
-      </div>
-      <div class="field-row two">
-        <div class="field">
-          <label>Avg Days Between Purchases</label>
-          <input type="number" id="avg_days_between" value="30" min="0" max="365"/>
-        </div>
-        <div class="field">
           <label>Support Tickets</label>
           <input type="number" id="support_tickets" value="0" min="0" max="15"/>
         </div>
       </div>
     </div>
 
-    <!-- PROFILE -->
+    <!-- CUSTOMER PROFILE -->
     <div class="form-section">
       <div class="section-label">Customer Profile</div>
       <div class="field-row four">
@@ -445,57 +395,50 @@
           <select id="gender">
             <option value="M">Male</option>
             <option value="F">Female</option>
-            <option value="Unknown">Unknown</option>
           </select>
         </div>
         <div class="field">
-          <label>Customer Type</label>
-          <select id="customer_type">
-            <option value="Hyperactif">Hyperactif</option>
-            <option value="Régulier" selected>Régulier</option>
-            <option value="Occasionnel">Occasionnel</option>
-            <option value="Nouveau">Nouveau</option>
-            <option value="Perdu">Perdu</option>
+          <label>Spending Category</label>
+          <select id="spending_cat">
+            <option value="Low">Low</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="High">High</option>
+            <option value="VIP">VIP</option>
           </select>
         </div>
         <div class="field">
           <label>Account Status</label>
           <select id="account_status">
             <option value="Active" selected>Active</option>
+            <option value="Inactive">Inactive</option>
             <option value="Suspended">Suspended</option>
-            <option value="Pending">Pending</option>
-            <option value="Closed">Closed</option>
           </select>
         </div>
       </div>
       <div class="field-row four">
         <div class="field">
-          <label>Favorite Season</label>
+          <label>Favourite Season</label>
           <select id="season">
-            <option value="Hiver" selected>Winter</option>
+            <option value="Hiver">Winter</option>
             <option value="Printemps">Spring</option>
             <option value="Été">Summer</option>
-            <option value="Automne">Autumn</option>
+            <option value="Automne" selected>Autumn</option>
           </select>
         </div>
         <div class="field">
           <label>Region</label>
           <select id="region">
             <option value="UK" selected>UK</option>
-            <option value="Europe_N">Europe N</option>
-            <option value="Europe_S">Europe S</option>
-            <option value="Europe_E">Europe E</option>
-            <option value="Europe_C">Europe C</option>
-            <option value="Asia">Asia</option>
-            <option value="Other">Other</option>
+            <option value="Europe">Europe</option>
+            <option value="Overseas">Overseas</option>
           </select>
         </div>
         <div class="field">
           <label>Product Diversity</label>
           <select id="prod_diversity">
-            <option value="Spécialisé">Spécialisé</option>
-            <option value="Modéré" selected>Modéré</option>
-            <option value="Explorateur">Explorateur</option>
+            <option value="Spécialisé">Specialist</option>
+            <option value="Modéré" selected>Moderate</option>
+            <option value="Diversifié">Diverse</option>
           </select>
         </div>
         <div class="field">
@@ -503,7 +446,6 @@
           <select id="weekend_pref">
             <option value="Semaine" selected>Weekday</option>
             <option value="Weekend">Weekend</option>
-            <option value="Inconnu">Unknown</option>
           </select>
         </div>
       </div>
@@ -517,7 +459,7 @@
     </div>
   </div>
 
-  <!-- RESULT -->
+  <!-- RESULT PANEL -->
   <div class="result-card">
     <div class="card-header">
       <h2>Result</h2>
@@ -540,7 +482,6 @@
         <div class="prob-label" id="prob-label">—</div>
       </div>
 
-      <!-- CLUSTER BADGE -->
       <div class="cluster-badge" id="cluster-badge">
         <div class="cluster-badge-inner">
           <div class="cluster-dot" id="cluster-dot"></div>
@@ -565,6 +506,10 @@
           <span class="metric-value" id="m-risk">—</span>
         </div>
         <div class="metric">
+          <span class="metric-key">Decision Threshold</span>
+          <span class="metric-value" id="m-thresh">—</span>
+        </div>
+        <div class="metric">
           <span class="metric-key">Prediction</span>
           <span class="metric-value" id="m-pred">—</span>
         </div>
@@ -581,7 +526,7 @@
 </div>
 
 <footer>
-  Churn Predictor · GI2 Machine Learning Workshop · Flask + scikit-learn
+  Churn Predictor · GI2 Machine Learning Workshop · Flask + scikit-learn · Gradient Boosting
 </footer>
 
 <script>
@@ -595,31 +540,26 @@
     spinner.style.display = 'block';
 
     const payload = {
-      recency          : +document.getElementById('recency').value,
       frequency        : +document.getElementById('frequency').value,
       monetary         : +document.getElementById('monetary').value,
-      monetary_avg     : +document.getElementById('monetary_avg').value,
-      monetary_std     : 20,
-      monetary_min     : 0,
-      monetary_max     : +document.getElementById('monetary_avg').value * 2,
-      total_quantity   : +document.getElementById('total_quantity').value,
-      avg_qty          : 5, min_qty: 1, max_qty: 50,
+      monetary_max     : +document.getElementById('monetary').value / +document.getElementById('frequency').value * 2,
+      avg_qty          : 5,
       tenure           : +document.getElementById('tenure').value,
-      first_purchase   : +document.getElementById('tenure').value + 30,
-      preferred_day    : 2, preferred_hour: 14, preferred_month: 6,
+      preferred_day    : 2,
+      preferred_hour   : 14,
       weekend_ratio    : 0.3,
       avg_days_between : +document.getElementById('avg_days_between').value,
       unique_products  : +document.getElementById('unique_products').value,
-      avg_products     : 2, unique_countries: 1,
+      avg_products     : 2,
+      unique_countries : 1,
       cancelled        : +document.getElementById('cancelled').value,
       return_ratio     : +document.getElementById('return_ratio').value,
-      total_lines      : 60, avg_lines: 8,
       age              : +document.getElementById('age').value,
       support_tickets  : +document.getElementById('support_tickets').value,
-      satisfaction     : +document.getElementById('satisfaction').value,
-      spending_cat     : +document.getElementById('spending_cat').value,
-      age_cat: 2, basket_size: 1, preferred_time: 3,
-      customer_type    : document.getElementById('customer_type').value,
+      spending_cat     : document.getElementById('spending_cat').value,
+      age_cat          : '35-44',
+      basket_size      : 'Moyen',
+      preferred_time   : 'Après-midi',
       season           : document.getElementById('season').value,
       region           : document.getElementById('region').value,
       weekend_pref     : document.getElementById('weekend_pref').value,
@@ -627,18 +567,23 @@
       gender           : document.getElementById('gender').value,
       account_status   : document.getElementById('account_status').value,
       country          : 'United Kingdom',
+      reg_month        : 6,
+      reg_day          : 15,
+      reg_weekday      : 2,
+      is_private_ip    : 0,
+      ip_class         : 1,
     };
 
     try {
       const res  = await fetch('/predict', {
-        method: 'POST',
+        method : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body   : JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.success) showResult(data.result);
-      else alert('Error: ' + data.error);
-    } catch(e) {
+      else alert('Prediction error: ' + data.error);
+    } catch (e) {
       alert('Connection error: ' + e.message);
     } finally {
       btn.disabled          = false;
@@ -661,9 +606,9 @@
       'Critique': { text: 'red',    tag: 'tag-red',    bar: '#922b21', icon: '🔴' },
     }[r.risk_level] || { text: 'green', tag: 'tag-green', bar: '#27ae60', icon: '✅' };
 
-    document.getElementById('verdict-icon').textContent = cls.icon;
-    document.getElementById('verdict-name').textContent = r.label;
-    document.getElementById('verdict-name').className   = 'verdict-name ' + cls.text;
+    document.getElementById('verdict-icon').textContent       = cls.icon;
+    document.getElementById('verdict-name').textContent       = r.label;
+    document.getElementById('verdict-name').className         = 'verdict-name ' + cls.text;
 
     const tag = document.getElementById('verdict-tag');
     tag.textContent = r.risk_level + ' Risk';
@@ -674,25 +619,25 @@
     setTimeout(() => { bar.style.width = prob + '%'; }, 80);
     document.getElementById('prob-label').textContent = prob + '% churn probability';
 
-    document.getElementById('m-prob').textContent = prob + '%';
-    document.getElementById('m-prob').className   = 'metric-value ' + cls.text;
-    document.getElementById('m-ret').textContent  = ret + '%';
-    document.getElementById('m-risk').textContent = r.risk_level;
-    document.getElementById('m-risk').className   = 'metric-value ' + cls.text;
-    document.getElementById('m-pred').textContent = r.prediction === 1 ? 'Will Churn' : 'Will Stay';
-    document.getElementById('m-pred').className   = 'metric-value ' + cls.text;
+    document.getElementById('m-prob').textContent   = prob + '%';
+    document.getElementById('m-prob').className     = 'metric-value ' + cls.text;
+    document.getElementById('m-ret').textContent    = ret + '%';
+    document.getElementById('m-risk').textContent   = r.risk_level;
+    document.getElementById('m-risk').className     = 'metric-value ' + cls.text;
+    document.getElementById('m-thresh').textContent = (r.threshold * 100).toFixed(1) + '%';
+    document.getElementById('m-pred').textContent   = r.prediction === 1 ? 'Will Churn' : 'Will Stay';
+    document.getElementById('m-pred').className     = 'metric-value ' + cls.text;
 
-    // Cluster badge
     if (r.cluster_label) {
       const badge = document.getElementById('cluster-badge');
       badge.style.display = 'block';
       document.getElementById('cluster-dot').style.background = r.cluster_color;
       document.getElementById('cluster-name').textContent =
-        r.cluster_emoji + '  Cluster ' + r.cluster_id + ' — ' + r.cluster_label;
+        r.cluster_emoji + '  ' + r.cluster_label;
     }
 
     const recs = {
-      'Faible'  : 'This customer is stable. Consider offering a loyalty reward or upsell to a premium tier to maximise their lifetime value.',
+      'Faible'  : 'This customer is stable. Consider a loyalty reward or upsell to a premium tier to maximise lifetime value.',
       'Moyen'   : 'Monitor this customer. Send a personalised offer or re-engagement email to strengthen the relationship.',
       'Élevé'   : 'High churn risk. Launch a retention campaign immediately — a targeted discount or personal outreach is recommended.',
       'Critique': 'Critical risk. This customer is likely disengaged. Assign priority support and make direct personal contact with a strong incentive.',

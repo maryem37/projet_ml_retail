@@ -54,12 +54,15 @@ def _get_top_features(model, feature_names, n: int = 15) -> list:
     return list(feature_names[:n])
 
 
-def _print_drift_summary(roc_ref: float, roc_cur: float, n_features: int):
+def _print_drift_summary(roc_ref: float, roc_cur: float, n_features: int,
+                          placeholder: bool = False):
     degradation = (roc_ref - roc_cur) * 100
     status      = "⚠️  DEGRADED" if degradation > 5 else "✅ STABLE"
 
     print("\n" + "=" * 60)
     print("  MONITORING SUMMARY")
+    if placeholder:
+        print("  ⚠️  PLACEHOLDER MODE — not real production monitoring")
     print("=" * 60)
     print(f"  Features monitored    : {n_features}")
     print(f"  Reference ROC-AUC     : {roc_ref:.4f}")
@@ -77,9 +80,9 @@ def _print_drift_summary(roc_ref: float, roc_cur: float, n_features: int):
 
 
 def _simple_monitoring(
-    reference    : pd.DataFrame,
-    current      : pd.DataFrame,
-    trained_model,
+    reference          : pd.DataFrame,
+    current            : pd.DataFrame,
+    calibrated_pipeline,          # ← full pipeline, not inner model
     feature_names,
 ) -> None:
     """
@@ -147,8 +150,8 @@ def _simple_monitoring(
     ref_features = reference.drop(columns=["target", "prediction"], errors="ignore")
     cur_features = current.drop(columns=["target", "prediction"],   errors="ignore")
 
-    ref_probs = trained_model.predict_proba(ref_features)[:, 1]
-    cur_probs = trained_model.predict_proba(cur_features)[:, 1]
+    ref_probs = calibrated_pipeline.predict_proba(ref_features)[:, 1]
+    cur_probs = calibrated_pipeline.predict_proba(cur_features)[:, 1]
 
     ref_auc     = roc_auc_score(reference["target"], ref_probs)
     cur_auc     = roc_auc_score(current["target"],   cur_probs)
@@ -176,43 +179,76 @@ if __name__ == "__main__":
 
     # ── 1. Load data & artifacts ───────────────────────────
     logger.info("Loading data and artifacts for monitoring...")
-
-    X_train = pd.read_csv("data/train_test/X_train.csv")
     X_test  = pd.read_csv("data/train_test/X_test.csv")
-    y_train = pd.read_csv("data/train_test/y_train.csv").squeeze()
     y_test  = pd.read_csv("data/train_test/y_test.csv").squeeze()
 
     pipeline       = joblib.load("models/churn_model.pkl")
     threshold_data = joblib.load("models/threshold.pkl")
+    THRESHOLD      = threshold_data["threshold"]
 
-    # Extract model step — SMOTE not needed at inference
-    trained_model = pipeline.estimator.named_steps["model"]   # ← fixed
-    THRESHOLD     = threshold_data["threshold"]
-
-    logger.info(
-        "Reference (train): %d rows | Current (test): %d rows",
-        len(X_train), len(X_test)
-    )
     logger.info("Using threshold: %.3f", THRESHOLD)
 
-    # ── 2. Build reference & current datasets ─────────────
-    reference = X_train.copy()
-    current   = X_test.copy()
+    # Reference = test set (last known good labelled data).
+    # Current   = new production data arriving over time.
+    # Using train as reference was wrong: it gives AUC ~0.999 (in-sample fit),
+    # making every future comparison look like degradation even when the model
+    # is stable. True drift monitoring compares two slices of held-out data.
+    PRODUCTION_DATA_PATH  = "data/production/new_customers.csv"
+    PRODUCTION_LABEL_PATH = "data/production/new_customers_labels.csv"
 
-    reference["target"] = y_train.values
-    current["target"]   = y_test.values
+    if not os.path.exists(PRODUCTION_DATA_PATH):
+        logger.warning(
+            "No production data found at %s. "
+            "Splitting test set 50/50 as a placeholder. "
+            "Replace with real incoming data when available.",
+            PRODUCTION_DATA_PATH,
+        )
+        logger.warning(
+            "PLACEHOLDER MODE: results below are NOT real drift monitoring. "
+            "With only ~437 rows per side, AUC differences of 1-3%% are "
+            "pure random noise. Do not act on these numbers.",
+        )
+        split     = len(X_test) // 2
+        X_ref_raw = X_test.iloc[:split].reset_index(drop=True)
+        X_cur_raw = X_test.iloc[split:].reset_index(drop=True)
+        y_ref     = y_test.iloc[:split].reset_index(drop=True)
+        y_cur     = y_test.iloc[split:].reset_index(drop=True)
+    else:
+        X_ref_raw = X_test.reset_index(drop=True)
+        y_ref     = y_test.reset_index(drop=True)
+        X_cur_raw = pd.read_csv(PRODUCTION_DATA_PATH)
+        y_cur     = pd.read_csv(PRODUCTION_LABEL_PATH).squeeze()
 
-    # Apply tuned threshold — not default 0.5
-    ref_probs = trained_model.predict_proba(X_train)[:, 1]
-    cur_probs = trained_model.predict_proba(X_test)[:, 1]
+    logger.info(
+        "Reference: %d rows | Current: %d rows",
+        len(X_ref_raw), len(X_cur_raw)
+    )
+
+    reference = X_ref_raw.copy()
+    current   = X_cur_raw.copy()
+    reference["target"] = y_ref.values
+    current["target"]   = y_cur.values
+
+    # Use the full calibrated pipeline — NOT the inner model.
+    # The inner model returns uncalibrated probabilities, which are
+    # inconsistent with the threshold that was tuned on calibrated outputs.
+    from sklearn.metrics import roc_auc_score
+    ref_probs = pipeline.predict_proba(X_ref_raw)[:, 1]
+    cur_probs = pipeline.predict_proba(X_cur_raw)[:, 1]
 
     reference["prediction"] = (ref_probs >= THRESHOLD).astype(int)
     current["prediction"]   = (cur_probs >= THRESHOLD).astype(int)
 
-    from sklearn.metrics import roc_auc_score
-    roc_ref = roc_auc_score(y_train, ref_probs)
-    roc_cur = roc_auc_score(y_test,  cur_probs)
-
+    roc_ref = roc_auc_score(y_ref, ref_probs)
+    roc_cur = roc_auc_score(y_cur, cur_probs)
+    # After computing roc_ref and roc_cur, add:
+    if roc_ref > 0.99:
+         logger.warning(
+             "Reference ROC-AUC=%.4f is suspiciously high — "
+              "possible overfitting. Consider stronger regularization or "
+             "cross-validated evaluation instead of train-set scoring.",
+                roc_ref
+         )
     # ── 3. Evidently or fallback ───────────────────────────
     try:
         from evidently.report import Report
@@ -272,7 +308,7 @@ if __name__ == "__main__":
         drift_report.save_html("reports/drift_report.html")
         logger.info("Drift report saved → reports/drift_report.html")
 
-        _print_drift_summary(roc_ref, roc_cur, len(important_features))
+        _print_drift_summary(roc_ref, roc_cur, len(important_features),placeholder=not os.path.exists(PRODUCTION_DATA_PATH))
 
     else:
-        _simple_monitoring(reference, current, trained_model, X_train.columns)
+        _simple_monitoring(reference, current, pipeline, X_test.columns) 
