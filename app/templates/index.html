@@ -25,332 +25,111 @@
       --sans:     'Source Sans 3', sans-serif;
     }
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--sans);
-      font-weight: 300;
-      min-height: 100vh;
-    }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); font-weight: 300; min-height: 100vh; }
 
     header {
-      background: var(--nav);
-      border-bottom: 3px solid #1a56a0;
-      padding: 0 40px;
-      height: 62px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      background: var(--nav); border-bottom: 3px solid #1a56a0;
+      padding: 0 40px; height: 62px;
+      display: flex; align-items: center; justify-content: space-between;
     }
-
-    .logo {
-      font-family: var(--serif);
-      font-size: 18px;
-      font-weight: 600;
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
+    .logo { font-family: var(--serif); font-size: 18px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 10px; }
     .logo::before { content: "◈"; color: #4d9de0; font-size: 22px; }
+    .logo span { color: #9bbde0; font-weight: 400; font-size: 13px; }
+    .header-right { font-size: 12px; color: #9bbde0; background: rgba(255,255,255,0.08); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); }
 
-    .logo span {
-      color: #9bbde0;
-      font-weight: 400;
-      font-size: 13px;
-    }
-
-    .header-right {
-      font-size: 12px;
-      color: #9bbde0;
-      background: rgba(255,255,255,0.08);
-      padding: 5px 12px;
-      border-radius: 20px;
-      border: 1px solid rgba(255,255,255,0.15);
-    }
-
-    .page-title {
-      text-align: center;
-      padding: 44px 24px 32px;
-      background: linear-gradient(180deg, #dbe8f5 0%, var(--bg) 100%);
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 32px;
-    }
-
-    .page-title h1 {
-      font-family: var(--serif);
-      font-size: 28px;
-      font-weight: 600;
-      color: var(--nav);
-      margin-bottom: 8px;
-    }
-
+    .page-title { text-align: center; padding: 44px 24px 32px; background: linear-gradient(180deg, #dbe8f5 0%, var(--bg) 100%); border-bottom: 1px solid var(--border); margin-bottom: 32px; }
+    .page-title h1 { font-family: var(--serif); font-size: 28px; font-weight: 600; color: var(--nav); margin-bottom: 8px; }
     .page-title p { font-size: 15px; color: var(--muted); }
 
-    .layout {
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 0 24px 60px;
-      display: grid;
-      grid-template-columns: 1fr 308px;
-      gap: 24px;
-      align-items: start;
-    }
+    .layout { max-width: 1020px; margin: 0 auto; padding: 0 24px 60px; display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
 
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: 0 2px 12px rgba(26,86,160,0.07);
-    }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 2px 12px rgba(26,86,160,0.07); }
+    .card-header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; background: linear-gradient(90deg, #f0f4f9, #fff); border-radius: var(--radius) var(--radius) 0 0; }
+    .card-header h2 { font-family: var(--serif); font-size: 15px; font-weight: 600; color: var(--nav); }
+    .badge { margin-left: auto; font-size: 11px; color: var(--accent); background: #e8f0fb; padding: 3px 10px; border-radius: 20px; border: 1px solid #c0d4f0; font-weight: 600; }
 
-    .card-header {
-      padding: 16px 24px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: linear-gradient(90deg, #f0f4f9, #ffffff);
-      border-radius: var(--radius) var(--radius) 0 0;
-    }
+    .form-section { padding: 20px 24px; border-bottom: 1px solid var(--border); }
+    .section-label { font-size: 11px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid #dce8f5; }
 
-    .card-header h2 {
-      font-family: var(--serif);
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--nav);
-    }
-
-    .card-header .badge {
-      margin-left: auto;
-      font-size: 11px;
-      color: var(--accent);
-      background: #e8f0fb;
-      padding: 3px 10px;
-      border-radius: 20px;
-      border: 1px solid #c0d4f0;
-      font-weight: 600;
-    }
-
-    .form-section {
-      padding: 20px 24px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .section-label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 1.2px;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 16px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #dce8f5;
-    }
-
-    .field-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 14px;
-      margin-bottom: 14px;
-    }
-
+    .field-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
     .field-row.two  { grid-template-columns: 1fr 1fr; }
     .field-row.four { grid-template-columns: 1fr 1fr 1fr 1fr; }
     .field-row:last-child { margin-bottom: 0; }
 
     .field { display: flex; flex-direction: column; gap: 5px; }
-    .field label { font-size: 12px; color: var(--muted); font-weight: 400; }
+    .field label { font-size: 12px; color: var(--muted); }
+    .field .hint  { font-size: 11px; color: #e67e22; font-style: italic; }
 
     .field input, .field select {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 8px 11px;
-      font-family: var(--sans);
-      font-size: 13px;
-      color: var(--text);
-      background: var(--white);
-      outline: none;
-      transition: border-color 0.15s, box-shadow 0.15s;
-      width: 100%;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 8px 11px; font-family: var(--sans); font-size: 13px;
+      color: var(--text); background: var(--white); outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s; width: 100%;
     }
+    .field input:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,86,160,0.12); }
 
-    .field input:focus, .field select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(26,86,160,0.12);
-    }
+    /* highlight the most important fields */
+    .field.key input, .field.key select { border-color: #1a56a0; background: #f5f9ff; }
+    .field.key label { color: #1a56a0; font-weight: 600; }
 
     .range-row { display: flex; align-items: center; gap: 10px; }
-
-    .range-row input[type="range"] {
-      flex: 1; padding: 0;
-      accent-color: var(--accent);
-      border: none; background: none;
-    }
-
-    .range-val {
-      font-size: 13px; color: var(--accent);
-      font-weight: 600; min-width: 38px; text-align: right;
-    }
+    .range-row input[type="range"] { flex: 1; padding: 0; accent-color: var(--accent); border: none; background: none; }
+    .range-val { font-size: 13px; color: var(--accent); font-weight: 600; min-width: 42px; text-align: right; }
 
     .submit-wrap { padding: 20px 24px; }
-
-    .btn {
-      width: 100%; padding: 13px;
-      background: var(--accent); color: var(--white);
-      font-family: var(--sans); font-size: 14px; font-weight: 600;
-      border: none; border-radius: var(--radius);
-      cursor: pointer; transition: background 0.15s, transform 0.1s;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      letter-spacing: 0.3px;
-    }
-
+    .btn { width: 100%; padding: 13px; background: var(--accent); color: #fff; font-family: var(--sans); font-size: 14px; font-weight: 600; border: none; border-radius: var(--radius); cursor: pointer; transition: background 0.15s, transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .btn:hover { background: #154490; }
     .btn:active { transform: scale(0.99); }
     .btn:disabled { background: var(--muted); cursor: not-allowed; }
-
-    .spinner {
-      width: 16px; height: 16px;
-      border: 2px solid rgba(255,255,255,0.4);
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-      display: none;
-    }
-
+    .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; display: none; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .result-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: 0 2px 12px rgba(26,86,160,0.07);
-      position: sticky;
-      top: 24px;
-      overflow: hidden;
-    }
-
-    .result-placeholder {
-      padding: 52px 24px;
-      text-align: center;
-    }
-
+    /* Result panel */
+    .result-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 2px 12px rgba(26,86,160,0.07); position: sticky; top: 24px; overflow: hidden; }
+    .result-placeholder { padding: 52px 24px; text-align: center; }
     .result-placeholder .icon { font-size: 38px; margin-bottom: 14px; opacity: 0.45; }
     .result-placeholder p { font-size: 13px; color: var(--muted); line-height: 1.7; }
-
     .result-body { display: none; }
 
-    .result-verdict {
-      padding: 28px 24px 20px;
-      text-align: center;
-      border-bottom: 1px solid var(--border);
-      background: linear-gradient(180deg, #f0f4f9, #ffffff);
-    }
-
+    .result-verdict { padding: 28px 24px 20px; text-align: center; border-bottom: 1px solid var(--border); background: linear-gradient(180deg, #f0f4f9, #fff); }
     .verdict-icon { font-size: 38px; margin-bottom: 8px; }
-
-    .verdict-name {
-      font-family: var(--serif);
-      font-size: 26px;
-      font-weight: 600;
-      margin-bottom: 6px;
-      color: var(--nav);
-    }
-
-    .verdict-tag {
-      display: inline-block;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      padding: 4px 13px;
-      border-radius: 20px;
-      margin-bottom: 18px;
-    }
-
-    .prob-wrap {
-      background: #dce8f5;
-      border-radius: 4px;
-      height: 8px;
-      overflow: hidden;
-      margin-bottom: 6px;
-    }
-
-    .prob-bar {
-      height: 100%;
-      border-radius: 4px;
-      transition: width 0.8s ease;
-      width: 0%;
-    }
-
+    .verdict-name { font-family: var(--serif); font-size: 26px; font-weight: 600; margin-bottom: 6px; color: var(--nav); }
+    .verdict-tag { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; padding: 4px 13px; border-radius: 20px; margin-bottom: 18px; }
+    .prob-wrap { background: #dce8f5; border-radius: 4px; height: 8px; overflow: hidden; margin-bottom: 6px; }
+    .prob-bar { height: 100%; border-radius: 4px; transition: width 0.8s ease; width: 0%; }
     .prob-label { font-size: 12px; color: var(--muted); }
 
-    .cluster-badge {
-      margin: 14px 20px 0;
-      padding: 11px 15px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      background: #f0f4f9;
-      display: none;
-    }
-
+    .cluster-badge { margin: 14px 20px 0; padding: 11px 15px; border-radius: var(--radius); border: 1px solid var(--border); background: #f0f4f9; display: none; }
     .cluster-badge-inner { display: flex; align-items: center; gap: 10px; }
     .cluster-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-    .cluster-text { font-size: 13px; }
-    .cluster-text strong { font-weight: 600; color: var(--nav); }
+    .cluster-text strong { font-weight: 600; color: var(--nav); font-size: 13px; }
     .cluster-text small { font-size: 11px; color: var(--muted); display: block; }
 
-    .result-metrics {
-      padding: 16px 24px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 11px;
-    }
-
+    .result-metrics { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 11px; }
     .metric { display: flex; justify-content: space-between; font-size: 13px; align-items: center; }
     .metric-key { color: var(--muted); }
     .metric-value { font-weight: 600; }
 
     .result-rec { padding: 18px 24px; }
-    .rec-label {
-      font-size: 11px; font-weight: 600;
-      letter-spacing: 1px; text-transform: uppercase;
-      color: var(--accent); margin-bottom: 8px;
-    }
-    .rec-body { font-size: 13px; line-height: 1.65; color: var(--text); }
+    .rec-label { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+    .rec-body { font-size: 13px; line-height: 1.65; }
 
     .green  { color: var(--green); }
     .orange { color: var(--orange); }
     .red    { color: var(--accent2); }
-
     .tag-green  { background: #e6f4ee; color: var(--green);   border: 1px solid #a8d8bc; }
     .tag-orange { background: #fdf3e3; color: var(--orange);  border: 1px solid #f0c980; }
     .tag-red    { background: #fdedec; color: var(--accent2); border: 1px solid #f5b7b1; }
 
-    .toast {
-      display: none;
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-      background: #0d2b5e; color: #fff;
-      padding: 12px 24px; border-radius: 6px;
-      font-size: 13px; z-index: 9999;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-      max-width: 90vw; text-align: center;
-    }
+    .debug-box { background: #fffbf0; border: 1px solid #f0c980; border-radius: var(--radius); padding: 12px 16px; margin: 12px 24px 0; font-size: 11px; color: #7a5a00; font-family: monospace; display: none; }
 
-    footer {
-      text-align: center; padding: 20px;
-      font-size: 12px; color: var(--muted);
-      border-top: 1px solid var(--border);
-      background: var(--nav);
-      color: #9bbde0;
-    }
+    .toast { display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #0d2b5e; color: #fff; padding: 12px 24px; border-radius: 6px; font-size: 13px; z-index: 9999; box-shadow: 0 4px 16px rgba(0,0,0,0.3); max-width: 90vw; text-align: center; }
 
-    @media (max-width: 720px) {
+    footer { text-align: center; padding: 20px; font-size: 12px; border-top: 1px solid var(--border); background: var(--nav); color: #9bbde0; }
+
+    @media (max-width: 760px) {
       .layout { grid-template-columns: 1fr; }
-      .field-row { grid-template-columns: 1fr 1fr; }
-      .field-row.four { grid-template-columns: 1fr 1fr; }
+      .field-row, .field-row.four { grid-template-columns: 1fr 1fr; }
       .result-card { position: static; }
     }
   </style>
@@ -364,51 +143,90 @@
 
 <div class="page-title">
   <h1>Customer Churn Analysis</h1>
-  <p>Enter customer data to predict churn probability, risk level, and customer segment.</p>
+  <p>Enter customer data to predict churn probability, risk level, and customer segment.<br/>
+  <small style="color:#e67e22">★ Blue-bordered fields have the highest impact on the prediction</small></p>
 </div>
 
 <div class="layout">
-
   <div class="card">
     <div class="card-header">
       <h2>Customer Data</h2>
-      <span class="badge">16 fields</span>
+      <span class="badge">24 fields · all wired</span>
     </div>
 
-    <!-- PURCHASE BEHAVIOUR -->
+    <!-- ── SECTION 1: High-impact purchase signals ── -->
+    <div class="form-section">
+      <div class="section-label">★ Top predictors — change these to see results shift</div>
+      <div class="field-row four">
+
+        <div class="field key">
+          <label>Spending Category</label>
+          <!-- #1 feature: 54% importance -->
+          <select id="spending_cat">
+            <option value="Low">Low</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="High">High</option>
+            <option value="VIP">VIP</option>
+          </select>
+        </div>
+
+        <div class="field key">
+          <label>Frequency (orders)</label>
+          <!-- #2 feature: 16% importance -->
+          <input type="number" id="frequency" value="5" min="1" max="500"/>
+        </div>
+
+        <div class="field key">
+          <!-- #3 feature: 15% importance — was HARDCODED to 5 before, never visible -->
+          <label>Avg Qty / Transaction</label>
+          <span class="hint">★ 3rd most important</span>
+          <input type="number" id="avg_qty_per_tx" value="5" min="1" max="200"/>
+        </div>
+
+        <div class="field key">
+          <label>Unique Products</label>
+          <!-- #4 feature: 5% importance -->
+          <input type="number" id="unique_products" value="10" min="1"/>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── SECTION 2: Purchase behaviour ── -->
     <div class="form-section">
       <div class="section-label">Purchase Behaviour</div>
       <div class="field-row">
-        <div class="field">
-          <label>Frequency (orders)</label>
-          <input type="number" id="frequency" value="5" min="1" max="500"/>
-        </div>
         <div class="field">
           <label>Monetary Total (£)</label>
           <input type="number" id="monetary" value="350" min="0"/>
         </div>
         <div class="field">
           <label>Customer Tenure (days)</label>
-          <input type="number" id="tenure" value="365" min="0" max="730"/>
-        </div>
-      </div>
-      <div class="field-row">
-        <div class="field">
-          <label>Unique Products</label>
-          <input type="number" id="unique_products" value="10" min="1"/>
-        </div>
-        <div class="field">
-          <label>Cancelled Transactions</label>
-          <input type="number" id="cancelled" value="0" min="0"/>
+          <input type="number" id="tenure" value="365" min="0" max="3650"/>
         </div>
         <div class="field">
           <label>Avg Days Between Purchases</label>
           <input type="number" id="avg_days_between" value="30" min="0" max="365"/>
         </div>
       </div>
+      <div class="field-row">
+        <div class="field">
+          <!-- separate from avg_qty_per_tx — different model feature -->
+          <label>Avg Products / Transaction</label>
+          <input type="number" id="avg_products_per_tx" value="2" min="1" max="50"/>
+        </div>
+        <div class="field">
+          <label>Cancelled Transactions</label>
+          <input type="number" id="cancelled" value="0" min="0"/>
+        </div>
+        <div class="field">
+          <label>Support Tickets</label>
+          <input type="number" id="support_tickets" value="0" min="0" max="15"/>
+        </div>
+      </div>
       <div class="field-row two">
         <div class="field">
-          <label>Return Ratio</label>
+          <label>Return Ratio (0 – 100 %)</label>
           <div class="range-row">
             <input type="range" id="return_ratio" min="0" max="1" step="0.01" value="0"
               oninput="document.getElementById('rr_val').textContent=(+this.value*100).toFixed(0)+'%'"/>
@@ -416,34 +234,37 @@
           </div>
         </div>
         <div class="field">
-          <label>Support Tickets</label>
-          <input type="number" id="support_tickets" value="0" min="0" max="15"/>
+          <label>Unique Countries Ordered From</label>
+          <input type="number" id="unique_countries" value="1" min="1" max="10"/>
         </div>
       </div>
     </div>
 
-    <!-- CUSTOMER PROFILE -->
+    <!-- ── SECTION 3: Customer profile ── -->
     <div class="form-section">
       <div class="section-label">Customer Profile</div>
       <div class="field-row four">
         <div class="field">
           <label>Age</label>
-          <input type="number" id="age" value="35" min="18" max="81"/>
+          <input type="number" id="age" value="35" min="18" max="90"
+            oninput="syncAgeCategory(this.value)"/>
+        </div>
+        <div class="field">
+          <label>Age Category</label>
+          <select id="age_cat">
+            <option value="18-24">18–24</option>
+            <option value="25-34">25–34</option>
+            <option value="35-44" selected>35–44</option>
+            <option value="45-54">45–54</option>
+            <option value="55-64">55–64</option>
+            <option value="65+">65+</option>
+          </select>
         </div>
         <div class="field">
           <label>Gender</label>
           <select id="gender">
             <option value="M">Male</option>
             <option value="F">Female</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Spending Category</label>
-          <select id="spending_cat">
-            <option value="Low">Low</option>
-            <option value="Medium" selected>Medium</option>
-            <option value="High">High</option>
-            <option value="VIP">VIP</option>
           </select>
         </div>
         <div class="field">
@@ -457,12 +278,37 @@
       </div>
       <div class="field-row four">
         <div class="field">
-          <label>Favourite Season</label>
-          <select id="season">
-            <option value="Hiver">Winter</option>
-            <option value="Printemps">Spring</option>
-            <option value="Été">Summer</option>
-            <option value="Automne" selected>Autumn</option>
+          <label>Basket Size</label>
+          <select id="basket_size">
+            <option value="Petit">Small (Petit)</option>
+            <option value="Moyen" selected>Medium (Moyen)</option>
+            <option value="Grand">Large (Grand)</option>
+            <option value="Inconnu">Unknown</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Preferred Time of Day</label>
+          <select id="preferred_time">
+            <option value="Nuit">Night (Nuit)</option>
+            <option value="Matin">Morning (Matin)</option>
+            <option value="Midi">Midday (Midi)</option>
+            <option value="Après-midi" selected>Afternoon</option>
+            <option value="Soir">Evening (Soir)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Country</label>
+          <select id="country">
+            <option value="United Kingdom" selected>United Kingdom</option>
+            <option value="France">France</option>
+            <option value="Germany">Germany</option>
+            <option value="Spain">Spain</option>
+            <option value="Italy">Italy</option>
+            <option value="Netherlands">Netherlands</option>
+            <option value="Belgium">Belgium</option>
+            <option value="United States">United States</option>
+            <option value="Australia">Australia</option>
+            <option value="Canada">Canada</option>
           </select>
         </div>
         <div class="field">
@@ -473,19 +319,99 @@
             <option value="Overseas">Overseas</option>
           </select>
         </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION 4: Preferences ── -->
+    <div class="form-section">
+      <div class="section-label">Preferences</div>
+      <div class="field-row four">
         <div class="field">
-          <label>Product Diversity</label>
-          <select id="prod_diversity">
-            <option value="Spécialisé">Specialist</option>
-            <option value="Modéré" selected>Moderate</option>
-            <option value="Diversifié">Diverse</option>
+          <label>Favourite Season</label>
+          <select id="season">
+            <option value="Hiver">Winter (Hiver)</option>
+            <option value="Printemps">Spring (Printemps)</option>
+            <option value="Été">Summer (Été)</option>
+            <option value="Automne" selected>Autumn (Automne)</option>
           </select>
         </div>
         <div class="field">
           <label>Weekend Preference</label>
           <select id="weekend_pref">
-            <option value="Semaine" selected>Weekday</option>
+            <option value="Semaine" selected>Weekday (Semaine)</option>
             <option value="Weekend">Weekend</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Product Diversity</label>
+          <select id="prod_diversity">
+            <option value="Spécialisé">Specialist (Spécialisé)</option>
+            <option value="Modéré" selected>Moderate (Modéré)</option>
+            <option value="Diversifié">Diverse (Diversifié)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Weekend Purchase Ratio</label>
+          <div class="range-row">
+            <input type="range" id="weekend_ratio" min="0" max="1" step="0.05" value="0.3"
+              oninput="document.getElementById('wr_val').textContent=(+this.value*100).toFixed(0)+'%'"/>
+            <span class="range-val" id="wr_val">30%</span>
+          </div>
+        </div>
+      </div>
+      <div class="field-row four">
+        <div class="field">
+          <label>Preferred Day of Week</label>
+          <select id="preferred_day">
+            <option value="0">Monday</option>
+            <option value="1">Tuesday</option>
+            <option value="2" selected>Wednesday</option>
+            <option value="3">Thursday</option>
+            <option value="4">Friday</option>
+            <option value="5">Saturday</option>
+            <option value="6">Sunday</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Preferred Hour (0–23)</label>
+          <input type="number" id="preferred_hour" value="14" min="0" max="23"/>
+        </div>
+        <div class="field">
+          <label>Registration Month</label>
+          <select id="reg_month">
+            <option value="1">January</option><option value="2">February</option>
+            <option value="3">March</option><option value="4">April</option>
+            <option value="5">May</option><option value="6" selected>June</option>
+            <option value="7">July</option><option value="8">August</option>
+            <option value="9">September</option><option value="10">October</option>
+            <option value="11">November</option><option value="12">December</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Registration Day</label>
+          <input type="number" id="reg_day" value="15" min="1" max="31"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION 5: Technical ── -->
+    <div class="form-section">
+      <div class="section-label">Technical / IP</div>
+      <div class="field-row two">
+        <div class="field">
+          <label>IP Type</label>
+          <select id="is_private_ip">
+            <option value="0" selected>Public IP</option>
+            <option value="1">Private / Corporate IP</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>IP Class</label>
+          <select id="ip_class">
+            <option value="1" selected>Class A (1–126)</option>
+            <option value="2">Class B (128–191)</option>
+            <option value="3">Class C (192–223)</option>
+            <option value="0">Other / Unknown</option>
           </select>
         </div>
       </div>
@@ -497,29 +423,27 @@
         <div class="spinner" id="spinner"></div>
       </button>
     </div>
+
+    <!-- Debug panel (shown on error) -->
+    <div class="debug-box" id="debug-box"></div>
   </div>
 
-  <!-- RESULT PANEL -->
+  <!-- ── RESULT PANEL ── -->
   <div class="result-card">
-    <div class="card-header">
-      <h2>Result</h2>
-    </div>
+    <div class="card-header"><h2>Result</h2></div>
 
     <div class="result-placeholder" id="result-placeholder">
       <div class="icon">📊</div>
-      <p>Fill in the form and click<br/><strong>Predict Churn</strong> to see<br/>the analysis result.</p>
+      <p>Fill in the form and click<br/><strong>Predict Churn</strong><br/>to see the analysis.</p>
     </div>
 
     <div class="result-body" id="result-body">
-
       <div class="result-verdict">
         <div class="verdict-icon" id="verdict-icon">—</div>
         <div class="verdict-name" id="verdict-name">—</div>
-        <div class="verdict-tag" id="verdict-tag">—</div>
-        <div class="prob-wrap">
-          <div class="prob-bar" id="prob-bar"></div>
-        </div>
-        <div class="prob-label" id="prob-label">—</div>
+        <div class="verdict-tag"  id="verdict-tag">—</div>
+        <div class="prob-wrap"><div class="prob-bar" id="prob-bar"></div></div>
+        <div class="prob-label"   id="prob-label">—</div>
       </div>
 
       <div class="cluster-badge" id="cluster-badge">
@@ -533,56 +457,107 @@
       </div>
 
       <div class="result-metrics">
-        <div class="metric">
-          <span class="metric-key">Churn Probability</span>
-          <span class="metric-value" id="m-prob">—</span>
-        </div>
-        <div class="metric">
-          <span class="metric-key">Retention Chance</span>
-          <span class="metric-value" id="m-ret">—</span>
-        </div>
-        <div class="metric">
-          <span class="metric-key">Risk Level</span>
-          <span class="metric-value" id="m-risk">—</span>
-        </div>
-        <div class="metric">
-          <span class="metric-key">Decision Threshold</span>
-          <span class="metric-value" id="m-thresh">—</span>
-        </div>
-        <div class="metric">
-          <span class="metric-key">Prediction</span>
-          <span class="metric-value" id="m-pred">—</span>
-        </div>
+        <div class="metric"><span class="metric-key">Churn Probability</span><span class="metric-value" id="m-prob">—</span></div>
+        <div class="metric"><span class="metric-key">Retention Chance</span> <span class="metric-value" id="m-ret">—</span></div>
+        <div class="metric"><span class="metric-key">Risk Level</span>        <span class="metric-value" id="m-risk">—</span></div>
+        <div class="metric"><span class="metric-key">Threshold</span>         <span class="metric-value" id="m-thresh">—</span></div>
+        <div class="metric"><span class="metric-key">Prediction</span>        <span class="metric-value" id="m-pred">—</span></div>
       </div>
 
       <div class="result-rec">
         <div class="rec-label">Recommended Action</div>
         <div class="rec-body" id="rec-body">—</div>
       </div>
-
     </div>
   </div>
-
 </div>
 
 <div class="toast" id="toast"></div>
 
-<footer>
-  Churn Predictor · GI2 Machine Learning Workshop · Flask + scikit-learn · Gradient Boosting
-</footer>
+<footer>Churn Predictor · GI2 Machine Learning Workshop · Flask + scikit-learn · Gradient Boosting</footer>
 
 <script>
-  // ✅ FIX: Always point to Flask on port 5000, regardless of how the HTML is served.
-  // Never use window.location because Live Server runs on 5500, not 5000.
+  /* ── Config ── */
   const FLASK_URL = "http://127.0.0.1:5000";
 
-  function showToast(msg, duration = 4000) {
+  /* ── Helpers ── */
+  function val(id)      { return document.getElementById(id).value; }
+  function numVal(id)   { return +document.getElementById(id).value; }
+  function floatVal(id) { return parseFloat(document.getElementById(id).value); }
+
+  function syncAgeCategory(age) {
+    age = parseInt(age);
+    const m = { '18-24': age<25, '25-34': age<35, '35-44': age<45,
+                '45-54': age<55, '55-64': age<65, '65+': true };
+    for (const [k, cond] of Object.entries(m)) {
+      if (cond) { document.getElementById('age_cat').value = k; break; }
+    }
+  }
+
+  function showToast(msg, ms=5000) {
     const t = document.getElementById('toast');
     t.textContent = msg;
     t.style.display = 'block';
-    setTimeout(() => { t.style.display = 'none'; }, duration);
+    setTimeout(() => t.style.display = 'none', ms);
   }
 
+  function showDebug(obj) {
+    const box = document.getElementById('debug-box');
+    box.style.display = 'block';
+    box.textContent   = 'Payload sent:\n' + JSON.stringify(obj, null, 2);
+  }
+
+  /* ── Build payload — every key reads from its own DOM element ── */
+  function buildPayload() {
+    const frequency = numVal('frequency');
+    const monetary  = numVal('monetary');
+
+    return {
+      /* ── Top-4 features (account for ~90% of importance) ── */
+      spending_cat    : val('spending_cat'),          // #1  54%  SpendingCategory
+      frequency       : frequency,                    // #2  16%  Frequency
+      avg_qty         : numVal('avg_qty_per_tx'),     // #3  15%  AvgQuantityPerTransaction  ← was always 5 before
+      unique_products : numVal('unique_products'),    // #4   5%  UniqueProducts
+
+      /* ── Purchase behaviour ── */
+      monetary         : monetary,
+      monetary_max     : monetary / Math.max(frequency, 1) * 2,  // derived — no direct input
+      tenure           : numVal('tenure'),
+      avg_days_between : numVal('avg_days_between'),
+      avg_products     : numVal('avg_products_per_tx'),  // AvgProductsPerTransaction (separate from avg_qty!)
+      cancelled        : numVal('cancelled'),
+      return_ratio     : floatVal('return_ratio'),
+      support_tickets  : numVal('support_tickets'),
+      unique_countries : numVal('unique_countries'),
+
+      /* ── Profile ── */
+      age            : numVal('age'),
+      age_cat        : val('age_cat'),
+      gender         : val('gender'),
+      account_status : val('account_status'),
+      basket_size    : val('basket_size'),          // BasketSizeCategory
+      country        : val('country'),
+
+      /* ── Preferences ── */
+      preferred_time : val('preferred_time'),       // PreferredTimeOfDay
+      season         : val('season'),               // FavoriteSeason (French values)
+      region         : val('region'),
+      weekend_pref   : val('weekend_pref'),         // WeekendPreference (French values)
+      prod_diversity : val('prod_diversity'),        // ProductDiversity (French values)
+      preferred_day  : numVal('preferred_day'),
+      preferred_hour : numVal('preferred_hour'),
+      weekend_ratio  : floatVal('weekend_ratio'),
+
+      /* ── Registration / Technical ── */
+      reg_month     : numVal('reg_month'),
+      reg_day       : numVal('reg_day'),
+      reg_weekday   : 2,                    // can't easily compute without a Date(); safe default
+      is_private_ip : numVal('is_private_ip'),
+      ip_class      : numVal('ip_class'),
+    };
+  }
+
+  /* ── Main predict call ── */
   async function runPrediction() {
     const btn     = document.getElementById('predict-btn');
     const btnText = document.getElementById('btn-text');
@@ -592,40 +567,7 @@
     btnText.style.display = 'none';
     spinner.style.display = 'block';
 
-    const payload = {
-      frequency        : +document.getElementById('frequency').value,
-      monetary         : +document.getElementById('monetary').value,
-      monetary_max     : +document.getElementById('monetary').value / +document.getElementById('frequency').value * 2,
-      avg_qty          : 5,
-      tenure           : +document.getElementById('tenure').value,
-      preferred_day    : 2,
-      preferred_hour   : 14,
-      weekend_ratio    : 0.3,
-      avg_days_between : +document.getElementById('avg_days_between').value,
-      unique_products  : +document.getElementById('unique_products').value,
-      avg_products     : 2,
-      unique_countries : 1,
-      cancelled        : +document.getElementById('cancelled').value,
-      return_ratio     : +document.getElementById('return_ratio').value,
-      age              : +document.getElementById('age').value,
-      support_tickets  : +document.getElementById('support_tickets').value,
-      spending_cat     : document.getElementById('spending_cat').value,
-      age_cat          : '35-44',
-      basket_size      : 'Moyen',
-      preferred_time   : 'Après-midi',
-      season           : document.getElementById('season').value,
-      region           : document.getElementById('region').value,
-      weekend_pref     : document.getElementById('weekend_pref').value,
-      prod_diversity   : document.getElementById('prod_diversity').value,
-      gender           : document.getElementById('gender').value,
-      account_status   : document.getElementById('account_status').value,
-      country          : 'United Kingdom',
-      reg_month        : 6,
-      reg_day          : 15,
-      reg_weekday      : 2,
-      is_private_ip    : 0,
-      ip_class         : 1,
-    };
+    const payload = buildPayload();
 
     try {
       const res = await fetch(`${FLASK_URL}/predict`, {
@@ -634,21 +576,27 @@
         body   : JSON.stringify(payload),
       });
 
-      const contentType = res.headers.get('content-type') || '';
-      if (!contentType.includes('application/json')) {
+      const ct = res.headers.get('content-type') || '';
+      if (!ct.includes('application/json')) {
         const raw = await res.text();
-        throw new Error(`Server returned non-JSON (status ${res.status}): ${raw.slice(0, 120)}`);
+        throw new Error(`Non-JSON response (HTTP ${res.status}): ${raw.slice(0, 200)}`);
       }
 
       const data = await res.json();
-      if (data.success) showResult(data.result);
-      else showToast('Prediction error: ' + data.error);
+
+      if (data.success) {
+        showResult(data.result, payload);
+      } else {
+        showToast('❌ Server error: ' + data.error);
+        showDebug(payload);
+      }
 
     } catch (e) {
-      if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
-        showToast('❌ Cannot reach Flask server. Make sure python app.py is running on http://127.0.0.1:5000');
+      if (e.message.includes('fetch') || e.message.includes('NetworkError')) {
+        showToast('❌ Cannot reach Flask on http://127.0.0.1:5000 — is python app.py running?');
       } else {
         showToast('❌ ' + e.message);
+        showDebug(payload);
       }
       console.error(e);
     } finally {
@@ -658,56 +606,55 @@
     }
   }
 
-  function showResult(r) {
+  /* ── Render result ── */
+  function showResult(r, payload) {
     document.getElementById('result-placeholder').style.display = 'none';
     document.getElementById('result-body').style.display        = 'block';
 
-    const prob = r.probability;
+    const prob = r.probability;    // already *100 from Flask
     const ret  = +(100 - prob).toFixed(1);
 
-    const cls = {
-      'Faible'  : { text: 'green',  tag: 'tag-green',  bar: '#1a7f4b', icon: '✅' },
-      'Moyen'   : { text: 'orange', tag: 'tag-orange', bar: '#c97a1a', icon: '⚠️' },
-      'Élevé'   : { text: 'red',    tag: 'tag-red',    bar: '#c0392b', icon: '🚨' },
-      'Critique': { text: 'red',    tag: 'tag-red',    bar: '#7b241c', icon: '🔴' },
-    }[r.risk_level] || { text: 'green', tag: 'tag-green', bar: '#1a7f4b', icon: '✅' };
+    const theme = {
+      'Faible'  : { cls:'green',  tag:'tag-green',  bar:'#1a7f4b', icon:'✅' },
+      'Moyen'   : { cls:'orange', tag:'tag-orange', bar:'#c97a1a', icon:'⚠️' },
+      'Élevé'   : { cls:'red',    tag:'tag-red',    bar:'#c0392b', icon:'🚨' },
+      'Critique': { cls:'red',    tag:'tag-red',    bar:'#7b241c', icon:'🔴' },
+    }[r.risk_level] || { cls:'green', tag:'tag-green', bar:'#1a7f4b', icon:'✅' };
 
-    document.getElementById('verdict-icon').textContent = cls.icon;
+    document.getElementById('verdict-icon').textContent = theme.icon;
     document.getElementById('verdict-name').textContent = r.label;
-    document.getElementById('verdict-name').className   = 'verdict-name';
 
     const tag = document.getElementById('verdict-tag');
     tag.textContent = r.risk_level + ' Risk';
-    tag.className   = 'verdict-tag ' + cls.tag;
+    tag.className   = 'verdict-tag ' + theme.tag;
 
     const bar = document.getElementById('prob-bar');
-    bar.style.background = cls.bar;
+    bar.style.background = theme.bar;
     setTimeout(() => { bar.style.width = prob + '%'; }, 80);
-    document.getElementById('prob-label').textContent = prob + '% churn probability';
+    document.getElementById('prob-label').textContent = prob.toFixed(1) + '% churn probability';
 
-    document.getElementById('m-prob').textContent = prob + '%';
-    document.getElementById('m-prob').className   = 'metric-value ' + cls.text;
-    document.getElementById('m-ret').textContent  = ret + '%';
-    document.getElementById('m-risk').textContent = r.risk_level;
-    document.getElementById('m-risk').className   = 'metric-value ' + cls.text;
-    document.getElementById('m-thresh').textContent = (r.threshold * 100).toFixed(1) + '%';
-    document.getElementById('m-pred').textContent   = r.prediction === 1 ? 'Will Churn' : 'Will Stay';
-    document.getElementById('m-pred').className     = 'metric-value ' + (r.prediction === 1 ? 'red' : 'green');
+    document.getElementById('m-prob').textContent  = prob.toFixed(1) + '%';
+    document.getElementById('m-prob').className    = 'metric-value ' + theme.cls;
+    document.getElementById('m-ret').textContent   = ret + '%';
+    document.getElementById('m-risk').textContent  = r.risk_level;
+    document.getElementById('m-risk').className    = 'metric-value ' + theme.cls;
+    document.getElementById('m-thresh').textContent= (r.threshold * 100).toFixed(1) + '%';
+    document.getElementById('m-pred').textContent  = r.prediction === 1 ? 'Will Churn' : 'Will Stay';
+    document.getElementById('m-pred').className    = 'metric-value ' + (r.prediction === 1 ? 'red' : 'green');
 
     if (r.cluster_label) {
-      const badge = document.getElementById('cluster-badge');
-      badge.style.display = 'block';
-      document.getElementById('cluster-dot').style.background = r.cluster_color;
-      document.getElementById('cluster-name').textContent = r.cluster_emoji + '  ' + r.cluster_label;
+      document.getElementById('cluster-badge').style.display = 'block';
+      document.getElementById('cluster-dot').style.background = r.cluster_color || '#888';
+      document.getElementById('cluster-name').textContent = (r.cluster_emoji || '') + '  ' + r.cluster_label;
     }
 
     const recs = {
-      'Faible'  : 'This customer is stable. Consider a loyalty reward or upsell to a premium tier to maximise lifetime value.',
-      'Moyen'   : 'Monitor this customer. Send a personalised offer or re-engagement email to strengthen the relationship.',
-      'Élevé'   : 'High churn risk. Launch a retention campaign immediately — a targeted discount or personal outreach is recommended.',
-      'Critique': 'Critical risk. This customer is likely disengaged. Assign priority support and make direct personal contact with a strong incentive.',
+      'Faible'  : 'Customer is stable. Consider a loyalty reward or premium upsell to maximise lifetime value.',
+      'Moyen'   : 'Monitor this customer. Send a personalised re-engagement offer to strengthen the relationship.',
+      'Élevé'   : 'High churn risk. Launch a retention campaign now — a targeted discount or personal outreach is recommended.',
+      'Critique': 'Critical risk. Customer is likely disengaged. Assign priority support and make direct personal contact with a strong incentive.',
     };
-    document.getElementById('rec-body').textContent = recs[r.risk_level];
+    document.getElementById('rec-body').textContent = recs[r.risk_level] || '';
   }
 </script>
 </body>

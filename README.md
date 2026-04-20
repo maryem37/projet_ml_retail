@@ -71,7 +71,7 @@ python main.py
 1. **Preprocessing:** Cleans and prepares data (`src/preprocessing.py`)
 2. **Clustering:** Segments customers using K-Means (`src/clustering.py`)
 3. **Classification:** Trains churn prediction model (`src/train_model.py`)
-4. **Testing:** Runs tests (pytest)
+
 5. **Monitoring:** Monitors model/data drift (`src/monitoring.py`)
 6. **Prediction:** Runs batch predictions (`src/predict.py`)
 7. **Web App:** Launches Flask app (`app/app.py`)
