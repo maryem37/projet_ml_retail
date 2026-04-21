@@ -87,6 +87,11 @@ python app/app.py
 - Access the web interface at [http://localhost:5000](http://localhost:5000)
 - Submit customer data for churn prediction and cluster assignment
 
+<img width="1342" height="880" alt="Capture d&#39;écran 2026-04-21 141318" src="https://github.com/user-attachments/assets/8c9056c1-e85b-403a-933b-42769b51cc00" />
+<img width="1440" height="880" alt="Capture d&#39;écran 2026-04-21 141431" src="https://github.com/user-attachments/assets/0204d065-62b8-4b1a-8dda-cd6efe0080fd" />
+
+
+
 ## Requirements
 
 See `requirements.txt` for the full list. Key packages include:
