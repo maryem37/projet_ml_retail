@@ -233,6 +233,11 @@ This allows you to control the execution order as needed.
 - Access the web interface at [http://localhost:5000](http://localhost:5000)
 - Submit customer data for churn prediction and cluster assignment
 
+
+
+<img width="1342" height="880" alt="Capture d&#39;écran 2026-04-21 141318" src="https://github.com/user-attachments/assets/df0fab03-a1d3-4712-9078-f3042a93370d" />
+<img width="1440" height="880" alt="Capture d&#39;écran 2026-04-21 141431" src="https://github.com/user-attachments/assets/c3a147dc-e6cf-44c9-84f1-0643164b4b52" />
+
 ## Requirements
 
 See `requirements.txt` for the full list. Key packages include:
