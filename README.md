@@ -46,57 +46,163 @@ This repository provides a full ML workflow for retail data, including:
 2. **Create and activate a virtual environment (recommended):**
     ```bash
     python -m venv venv
-    # On Windows:
-    venv\Scripts\activate
-    # On Unix/Mac:
-    source venv/bin/activate
+
+    # Retail ML Project
+
+    Un pipeline complet de machine learning pour l’analyse, la segmentation et la prédiction de churn des clients du secteur retail. Ce projet inclut le prétraitement des données, le clustering, la classification, le monitoring, ainsi qu’une application web Flask pour des prédictions interactives.
+
+    ---
+
+    ## Table des matières
+
+    - [Présentation du projet](#présentation-du-projet)
+    - [Structure du projet](#structure-du-projet)
+    - [Installation](#installation)
+    - [Utilisation](#utilisation)
+      - [Exécution du pipeline](#exécution-du-pipeline)
+      - [Application web](#application-web)
+    - [Étapes du pipeline](#étapes-du-pipeline)
+    - [Dépendances](#dépendances)
+    - [Contribuer](#contribuer)
+    - [Licence](#licence)
+
+    ---
+
+    ## Présentation du projet
+
+    Ce dépôt propose un workflow ML complet pour la donnée retail, incluant :
+
+    - Prétraitement et nettoyage des données
+    - Segmentation client par clustering K-Means
+    - Prédiction du churn par modèles de classification
+    - Monitoring du modèle et détection de dérive
+    - Application web Flask interactive pour la prédiction
+
+    ---
+
+    ## Structure du projet
+
     ```
-3. **Install dependencies:**
+    .
+    ├── app/
+    │   ├── app.py
+    │   └── templates/
+    │       └── index.html
+    ├── config.yaml
+    ├── data/
+    │   ├── processed/
+    │   ├── raw/
+    │   └── train_test/
+    ├── logs/
+    ├── main.py
+    ├── models/
+    ├── notebooks/
+    │   ├── 01_EDA.ipynb
+    │   ├── EDA_Churn_Exploration.ipynb
+    │   └── reports/
+    ├── reports/
+    ├── requirements.txt
+    ├── src/
+    │   ├── clustering.py
+    │   ├── config_loader.py
+    │   ├── find_leaky_features.py
+    │   ├── monitoring.py
+    │   ├── predict.py
+    │   ├── preprocessing.py
+    │   ├── train_model.py
+    │   └── utils.py
+    └── tools/
+    ```
+
+    ---
+
+    ## Installation
+
+    1. **Cloner le dépôt :**
+        ```bash
+        git clone https://github.com/yourusername/projet_ml_retail.git
+        cd projet_ml_retail
+        ```
+
+    2. **Créer et activer un environnement virtuel (recommandé) :**
+        ```bash
+        python -m venv venv
+        # Sous Windows :
+        venv\Scripts\activate
+        # Sous Unix/Mac :
+        source venv/bin/activate
+        ```
+
+    3. **Installer les dépendances :**
+        ```bash
+        pip install -r requirements.txt
+        ```
+
+    ---
+
+    ## Utilisation
+
+    ### Exécution du pipeline
+
+    Lancer le pipeline principal :
     ```bash
-    pip install -r requirements.txt
+    python main.py
     ```
 
-## Usage
+    #### Options principales
 
-### Run the Full Pipeline
+    - `--no-flask` — Exécute le pipeline sans lancer Flask
+    - `--mlflow` — Active le tracking MLflow
+    - `--test` — Lance les tests
+    - `--monitor` — Monitoring uniquement
+    - `--steps 1,3,4` — Exécute des étapes spécifiques (voir ci-dessous)
+    - `--skip-on-fail` — Continue même si une étape échoue
 
-```bash
-python main.py
-```
+    ### Application web
 
+    Lancer l’application Flask (après le pipeline ou chargement des modèles) :
+    ```bash
+    python app/app.py
+    ```
 
+    - Accès à l’interface : [http://localhost:5000](http://localhost:5000)
+    - Soumettre des données client pour la prédiction du churn et l’assignation de cluster
 
-### Pipeline Steps
+    ---
 
-1. **Preprocessing:** Cleans and prepares data (`src/preprocessing.py`)
-2. **Clustering:** Segments customers using K-Means (`src/clustering.py`)
-3. **Classification:** Trains churn prediction model (`src/train_model.py`)
+    ## Étapes du pipeline
 
-5. **Monitoring:** Monitors model/data drift (`src/monitoring.py`)
-6. **Prediction:** Runs batch predictions (`src/predict.py`)
-7. **Web App:** Launches Flask app (`app/app.py`)
+    1. **Prétraitement :** Nettoyage et préparation des données (`src/preprocessing.py`)
+    2. **Clustering :** Segmentation client K-Means (`src/clustering.py`)
+    3. **Classification :** Modèle de prédiction du churn (`src/train_model.py`)
+    4. **Tests :** Lancement des tests (pytest)
+    5. **Monitoring :** Détection de dérive (`src/monitoring.py`)
+    6. **Prédiction :** Prédictions batch (`src/predict.py`)
+    7. **Web App :** Application Flask (`app/app.py`)
 
-### Web Application
+    ---
 
-Start the Flask app (after running the pipeline or loading models):
+    ## Dépendances
 
-```bash
-python app/app.py
-```
+    Voir `requirements.txt` pour la liste complète. Principaux packages :
 
-- Access the web interface at [http://localhost:5000](http://localhost:5000)
-- Submit customer data for churn prediction and cluster assignment
+    - pandas
+    - numpy
+    - scikit-learn
+    - matplotlib
+    - seaborn
+    - Flask
+    - joblib
+    - imbalanced-learn
 
-## Requirements
+    ---
 
-See `requirements.txt` for the full list. Key packages include:
-- pandas, numpy, scikit-learn, matplotlib, seaborn
-- Flask, joblib, imbalanced-learn
+    ## Contribuer
 
-## Contributing
+    Les contributions sont les bienvenues ! Merci d’ouvrir une issue ou une pull request.
 
-Contributions are welcome! Please open issues or submit pull requests.
+    ---
 
-## License
+    ## Licence
 
-This project is licensed under the MIT License.
+    Ce projet est sous licence MIT.
