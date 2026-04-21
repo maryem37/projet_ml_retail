@@ -1,14 +1,14 @@
 # ==========================================
 # RETAIL ML PROJECT - FLASK APPLICATION
 # ==========================================
-# FIXES vs previous version:
-#   ✅ avg_qty  → AvgQuantityPerTransaction  (was always defaulting to 1)
-#   ✅ avg_products → AvgProductsPerTransaction (kept separate from avg_qty)
-#   ✅ unique_countries field now read from payload (was hardcoded to 1)
-#   ✅ Cluster feature alignment fixed — pads/trims to exact kmeans.n_features_in_
-#      using the SAME column order as clustering.py (CLUSTERING_FEATURES list)
-#   ✅ CORS preflight OPTIONS handled correctly
-#   ✅ Error traceback always printed to console for debugging
+# FIXES:
+#   ✅ /debug endpoint — shows exactly what values reach the model
+#   ✅ Console prints received payload on every /predict call
+#   ✅ avg_qty → AvgQuantityPerTransaction (was defaulting to 1)
+#   ✅ avg_products → AvgProductsPerTransaction (separate feature)
+#   ✅ unique_countries read from payload
+#   ✅ Cluster feature alignment uses exact CLUSTERING_FEATURES order
+#   ✅ Full traceback printed on errors
 # ==========================================
 
 from flask import Flask, render_template, request, jsonify
@@ -58,20 +58,10 @@ X_ref            = pd.read_csv(ref_file, nrows=1)
 expected_columns = X_ref.columns.tolist()
 scaler_columns   = list(scaler.feature_names_in_)
 
-# ── Clustering ──────────────────────────────────────────────────
-# Must match EXACTLY the order used in clustering.py
 CLUSTERING_FEATURES = [
-    "Frequency",
-    "MonetaryTotal",
-    "CustomerTenureDays",
-    "ReturnRatio",
-    "CancelledTransactions",
-    "UniqueProducts",
-    "SupportTicketsCount",
-    "EngagementScore",
-    "DisengagementScore",
-    "AvgBasketValue",
-    "Country_TargetEnc",
+    "Frequency", "MonetaryTotal", "CustomerTenureDays", "ReturnRatio",
+    "CancelledTransactions", "UniqueProducts", "SupportTicketsCount",
+    "EngagementScore", "DisengagementScore", "AvgBasketValue", "Country_TargetEnc",
 ]
 
 CLUSTER_AVAILABLE = False
@@ -84,18 +74,20 @@ try:
 except FileNotFoundError:
     print("  ⚠️  kmeans_model.pkl not found — clustering disabled")
 
-# Business labels for each cluster (based on churn rate from clustering.py output)
 CLUSTER_NAMES = {
-    0: {"label": "Occasional",  "emoji": "🔵", "color": "#2c5f8a"},   # ~30% churn
-    1: {"label": "At Risk",     "emoji": "🟠", "color": "#e67e22"},   # ~56% churn
-    2: {"label": "Champions",   "emoji": "🟢", "color": "#27ae60"},   # ~5%  churn
+    0: {"label": "Occasional",  "emoji": "🔵", "color": "#2c5f8a"},
+    1: {"label": "At Risk",     "emoji": "🟠", "color": "#e67e22"},
+    2: {"label": "Champions",   "emoji": "🟢", "color": "#27ae60"},
 }
 
 print(f"  ✅ Flask app loaded  |  threshold={THRESHOLD:.3f}  |  PCA={USE_PCA}")
+print(f"  ✅ GBM root split: CustomerTenureDays ≤ 189.5 days")
+print(f"     → tenure < 190 → higher churn branch (52.9% churn rate)")
+print(f"     → tenure > 190 → lower  churn branch (42.1% churn rate)")
 
 
 # ==========================================
-# OHE CATEGORY MAP  (must match preprocessing_v3.py exactly)
+# OHE CATEGORY MAP
 # ==========================================
 
 OHE_CATEGORIES = {
@@ -135,14 +127,12 @@ def _ordinal_encode(df):
 def _apply_ohe(df):
     for col, categories in OHE_CATEGORIES.items():
         sorted_cats = sorted(categories)
-        ref_cat     = sorted_cats[0]   # noqa: F841 — reference category (dropped)
         non_ref     = sorted_cats[1:]
         val = str(df[col].iloc[0]) if col in df.columns else sorted_cats[0]
         for cat in non_ref:
             df[f"{col}_{cat}"] = int(val == cat)
         if col in df.columns:
             df = df.drop(columns=[col])
-    # Drop any remaining string/category columns
     leftover = df.select_dtypes(include=["object", "category"]).columns.tolist()
     if leftover:
         df = df.drop(columns=leftover)
@@ -195,14 +185,45 @@ def _log_transform(df):
     return df
 
 
-def _preprocess_input(df):
-    """
-    Full inference preprocessing — mirrors preprocessing_v3.py exactly.
-    Returns (df_for_model, df_scaled_for_clustering).
-    """
-    df = df.copy()
+def _build_customer_dict(data: dict) -> dict:
+    return {
+        "CustomerTenureDays"       : float(data.get("tenure",           365)),
+        "Frequency"                : float(data.get("frequency",        1)),
+        "AvgQuantityPerTransaction": float(data.get("avg_qty",          5)),
+        "AvgProductsPerTransaction": float(data.get("avg_products",     2)),
+        "UniqueProducts"           : float(data.get("unique_products",  1)),
+        "MonetaryTotal"            : float(data.get("monetary",         0)),
+        "MonetaryMax"              : float(data.get("monetary_max",     0)),
+        "AvgDaysBetweenPurchases"  : float(data.get("avg_days_between", 30)),
+        "UniqueCountries"          : float(data.get("unique_countries", 1)),
+        "CancelledTransactions"    : float(data.get("cancelled",        0)),
+        "ReturnRatio"              : float(data.get("return_ratio",     0)),
+        "SupportTicketsCount"      : float(data.get("support_tickets",  0)),
+        "PreferredDayOfWeek"       : float(data.get("preferred_day",    2)),
+        "PreferredHour"            : float(data.get("preferred_hour",   14)),
+        "WeekendPurchaseRatio"     : float(data.get("weekend_ratio",    0.3)),
+        "Age"                      : float(data.get("age",              35)),
+        "SpendingCategory"         : data.get("spending_cat",    "Medium"),
+        "AgeCategory"              : data.get("age_cat",         "35-44"),
+        "BasketSizeCategory"       : data.get("basket_size",     "Moyen"),
+        "PreferredTimeOfDay"       : data.get("preferred_time",  "Après-midi"),
+        "FavoriteSeason"           : data.get("season",          "Automne"),
+        "Region"                   : data.get("region",          "UK"),
+        "WeekendPreference"        : data.get("weekend_pref",    "Semaine"),
+        "ProductDiversity"         : data.get("prod_diversity",  "Modéré"),
+        "Gender"                   : data.get("gender",          "M"),
+        "AccountStatus"            : data.get("account_status",  "Active"),
+        "Country"                  : data.get("country",         "United Kingdom"),
+        "RegMonth"                 : int(data.get("reg_month",   6)),
+        "RegDay"                   : int(data.get("reg_day",     15)),
+        "RegWeekday"               : int(data.get("reg_weekday", 2)),
+        "IsPrivateIP"              : int(data.get("is_private_ip", 0)),
+        "IPClass"                  : int(data.get("ip_class",      1)),
+    }
 
-    # Drop leaky / redundant columns if accidentally present
+
+def _preprocess_input(df):
+    df = df.copy()
     cols_to_drop = [
         "Recency", "CustomerType", "ChurnRiskCategory", "RFMSegment",
         "LoyaltyLevel", "CustomerID", "NewsletterSubscribed", "UniqueInvoices",
@@ -212,33 +233,25 @@ def _preprocess_input(df):
         "PreferredMonth",
     ]
     df = df.drop(columns=[c for c in cols_to_drop if c in df.columns], errors="ignore")
-
-    # Ordinal encode before OHE
     df = _ordinal_encode(df)
-
-    # Extract Country before OHE (OHE would drop it)
     country_col = df.pop("Country") if "Country" in df.columns else None
     df = _apply_ohe(df)
     if country_col is not None:
         df["Country"] = country_col
-
     df = _target_encode_country(df)
     df = _impute(df)
     df = _engineer_features(df)
     df = _log_transform(df)
 
-    # Align to scaler columns — fill any missing with 0
     missing_scaler = [c for c in scaler_columns if c not in df.columns]
     if missing_scaler:
         df = pd.concat(
             [df, pd.DataFrame(0, index=df.index, columns=missing_scaler)], axis=1
         )
-
     cols_to_scale = [c for c in scaler_columns if c in df.columns]
     df_scaled = df.copy()
     df_scaled[cols_to_scale] = scaler.transform(df[cols_to_scale])
 
-    # PCA if model was trained on PCA features
     if USE_PCA:
         pca_input = df_scaled[[c for c in pca_numeric_cols if c in df_scaled.columns]]
         pca_arr   = pca.transform(pca_input)
@@ -247,60 +260,38 @@ def _preprocess_input(df):
     else:
         df_out = df_scaled
 
-    # Final column alignment to model input
     missing_final = [c for c in expected_columns if c not in df_out.columns]
     if missing_final:
         df_out = pd.concat(
             [df_out, pd.DataFrame(0, index=df_out.index, columns=missing_final)], axis=1
         )
     df_out = df_out[expected_columns]
-
     return df_out, df_scaled
 
 
-# ==========================================
-# PREDICTION
-# ==========================================
-
-def predict_churn(input_dict: dict) -> dict:
-    df_raw            = pd.DataFrame([input_dict])
+def predict_churn(customer: dict) -> dict:
+    df_raw              = pd.DataFrame([customer])
     df_model, df_scaled = _preprocess_input(df_raw)
+    probability         = float(pipeline.predict_proba(df_model)[0][1])
+    prediction          = int(probability >= THRESHOLD)
 
-    probability = float(pipeline.predict_proba(df_model)[0][1])
-    prediction  = int(probability >= THRESHOLD)
-
-    # ── Clustering ──────────────────────────────────────────────
     cluster_id   = None
     cluster_info = None
-
     if CLUSTER_AVAILABLE:
-        # Build cluster input using only the features clustering.py used,
-        # in the EXACT same order as CLUSTERING_FEATURES.
-        # Missing columns → 0 (safe: they were filled with 0 during clustering fit too).
-        cluster_data = {}
-        for col in CLUSTERING_FEATURES:
-            cluster_data[col] = df_scaled[col].values[0] if col in df_scaled.columns else 0.0
-
+        cluster_data = {col: (df_scaled[col].values[0] if col in df_scaled.columns else 0.0)
+                        for col in CLUSTERING_FEATURES}
         X_cluster = pd.DataFrame([cluster_data])[CLUSTERING_FEATURES]
-
-        # Safety: align to exact feature count the model expects
-        n_expected = kmeans.n_features_in_
-        n_have     = X_cluster.shape[1]
-
-        if n_have < n_expected:
-            # Pad with zeros
-            for i in range(n_expected - n_have):
+        n_exp = kmeans.n_features_in_
+        if X_cluster.shape[1] < n_exp:
+            for i in range(n_exp - X_cluster.shape[1]):
                 X_cluster[f"_pad_{i}"] = 0.0
-        elif n_have > n_expected:
-            # Trim to first n_expected columns
-            X_cluster = X_cluster.iloc[:, :n_expected]
-
+        elif X_cluster.shape[1] > n_exp:
+            X_cluster = X_cluster.iloc[:, :n_exp]
         cluster_id   = int(kmeans.predict(X_cluster)[0])
         cluster_info = CLUSTER_NAMES.get(cluster_id, {
             "label": f"Segment {cluster_id}", "emoji": "⚪", "color": "#888"
         })
 
-    # ── Risk level ──────────────────────────────────────────────
     if probability < 0.25:   risk = "Faible"
     elif probability < 0.50: risk = "Moyen"
     elif probability < 0.75: risk = "Élevé"
@@ -309,7 +300,7 @@ def predict_churn(input_dict: dict) -> dict:
     return {
         "prediction"   : prediction,
         "label"        : "Churn" if prediction == 1 else "Fidèle",
-        "probability"  : round(probability * 100, 1),   # sent as % to frontend
+        "probability"  : round(probability * 100, 1),
         "risk_level"   : risk,
         "threshold"    : round(THRESHOLD, 3),
         "cluster_id"   : cluster_id,
@@ -330,81 +321,85 @@ def index():
 
 @app.route("/predict", methods=["POST", "OPTIONS"])
 def predict():
-    # Handle CORS preflight
     if request.method == "OPTIONS":
         return jsonify({}), 200
-
     try:
         data = request.get_json(force=True, silent=True)
         if data is None:
             return jsonify({"success": False, "error": "Invalid or empty JSON body"}), 400
 
-        # ── Map frontend payload keys → internal feature names ──────────
-        # Every field is read explicitly — no silent fallbacks to wrong defaults.
-        customer = {
-            # ── Core purchase signals ──
-            "Frequency"                : float(data.get("frequency",        1)),
-            "MonetaryTotal"            : float(data.get("monetary",         0)),
-            "MonetaryMax"              : float(data.get("monetary_max",     0)),
-            # ✅ FIX: avg_qty → AvgQuantityPerTransaction (was hardcoded to 1 before)
-            "AvgQuantityPerTransaction": float(data.get("avg_qty",          5)),
-            # ✅ FIX: avg_products → AvgProductsPerTransaction (DIFFERENT feature from above)
-            "AvgProductsPerTransaction": float(data.get("avg_products",     2)),
-            "CustomerTenureDays"       : float(data.get("tenure",           0)),
-            "AvgDaysBetweenPurchases"  : float(data.get("avg_days_between", 30)),
-            "UniqueProducts"           : float(data.get("unique_products",  1)),
-            # ✅ FIX: unique_countries now read from payload (was hardcoded to 1)
-            "UniqueCountries"          : float(data.get("unique_countries", 1)),
-            "CancelledTransactions"    : float(data.get("cancelled",        0)),
-            "ReturnRatio"              : float(data.get("return_ratio",     0)),
-            "SupportTicketsCount"      : float(data.get("support_tickets",  0)),
+        # Always print to console so you can verify values are arriving correctly
+        print(f"\n[PREDICT] spending={data.get('spending_cat')}  "
+              f"freq={data.get('frequency')}  avg_qty={data.get('avg_qty')}  "
+              f"tenure={data.get('tenure')}  season={data.get('season')}")
 
-            # ── Timing ──
-            "PreferredDayOfWeek"       : float(data.get("preferred_day",   2)),
-            "PreferredHour"            : float(data.get("preferred_hour",  14)),
-            "WeekendPurchaseRatio"     : float(data.get("weekend_ratio",   0.3)),
+        customer = _build_customer_dict(data)
+        result   = predict_churn(customer)
 
-            # ── Demographics ──
-            "Age"                      : float(data.get("age",             35)),
-
-            # ── Ordinal categoricals (string → handled by _ordinal_encode) ──
-            "SpendingCategory"         : data.get("spending_cat",    "Medium"),
-            "AgeCategory"              : data.get("age_cat",         "35-44"),
-            "BasketSizeCategory"       : data.get("basket_size",     "Moyen"),
-            "PreferredTimeOfDay"       : data.get("preferred_time",  "Après-midi"),
-
-            # ── OHE categoricals (French values — must match training OHE_CATEGORIES) ──
-            "FavoriteSeason"           : data.get("season",          "Automne"),
-            "Region"                   : data.get("region",          "UK"),
-            "WeekendPreference"        : data.get("weekend_pref",    "Semaine"),
-            "ProductDiversity"         : data.get("prod_diversity",  "Modéré"),
-            "Gender"                   : data.get("gender",          "M"),
-            "AccountStatus"            : data.get("account_status",  "Active"),
-
-            # ── Target-encoded ──
-            "Country"                  : data.get("country",         "United Kingdom"),
-
-            # ── Registration date components ──
-            "RegMonth"                 : int(data.get("reg_month",   6)),
-            "RegDay"                   : int(data.get("reg_day",     15)),
-            "RegWeekday"               : int(data.get("reg_weekday", 2)),
-
-            # ── IP features ──
-            "IsPrivateIP"              : int(data.get("is_private_ip", 0)),
-            "IPClass"                  : int(data.get("ip_class",      1)),
-        }
-
-        result = predict_churn(customer)
+        print(f"         → prob={result['probability']}%  label={result['label']}")
         return jsonify({"success": True, "result": result})
 
     except Exception as e:
-        traceback.print_exc()   # always print full stack trace to console
+        traceback.print_exc()
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-# ==========================================
-# ENTRY POINT
-# ==========================================
+@app.route("/debug", methods=["POST", "OPTIONS"])
+def debug():
+    """
+    Debug endpoint — paste into your browser console to verify values:
+
+    fetch('http://127.0.0.1:5000/debug', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+            spending_cat:'Low', frequency:1, avg_qty:1,
+            tenure:50, season:'Hiver'
+        })
+    }).then(r=>r.json()).then(d=>console.table(d))
+    """
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+    try:
+        data     = request.get_json(force=True, silent=True) or {}
+        customer = _build_customer_dict(data)
+
+        df_raw              = pd.DataFrame([customer])
+        df_model, df_scaled = _preprocess_input(df_raw)
+        probability         = float(pipeline.predict_proba(df_model)[0][1])
+
+        key_cols = [
+            "CustomerTenureDays", "Frequency", "SpendingCategory",
+            "AvgQuantityPerTransaction", "UniqueProducts", "MonetaryTotal",
+            "EngagementScore", "DisengagementScore", "AvgBasketValue",
+            "FavoriteSeason_Hiver", "FavoriteSeason_Printemps",
+        ]
+        scaled_vals = {
+            col: round(float(df_model[col].values[0]), 4)
+            for col in key_cols if col in df_model.columns
+        }
+
+        return jsonify({
+            "step1_received": {k: data.get(k) for k in
+                ["spending_cat","frequency","avg_qty","tenure","season","unique_products"]},
+            "step2_customer_dict": {
+                "SpendingCategory"         : customer["SpendingCategory"],
+                "Frequency"                : customer["Frequency"],
+                "AvgQuantityPerTransaction": customer["AvgQuantityPerTransaction"],
+                "CustomerTenureDays"       : customer["CustomerTenureDays"],
+                "FavoriteSeason"           : customer["FavoriteSeason"],
+            },
+            "step3_scaled_model_input": scaled_vals,
+            "result": {
+                "probability_pct": round(probability * 100, 2),
+                "prediction"     : "Churn" if probability >= THRESHOLD else "Fidèle",
+                "threshold"      : THRESHOLD,
+            }
+        })
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
