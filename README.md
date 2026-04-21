@@ -149,11 +149,76 @@ This repository provides a full ML workflow for retail data, including:
     python main.py
     ```
 
+---
+
+### Exécution d'une partie spécifique du projet et ordre personnalisé
+
+Vous pouvez exécuter une ou plusieurs parties du pipeline en précisant l'étape ou la séquence d'étapes à lancer. Utilisez le script suivant (à créer si besoin) :
+
+```bash
+python run_part.py --steps preprocessing,clustering,predict
+```
+
+où `--steps` accepte une ou plusieurs étapes séparées par des virgules :
+
+- `preprocessing` : Prétraitement des données
+- `clustering`    : Segmentation/Clustering
+- `regression`    : Régression
+- `train_model`   : Entraînement du modèle
+- `predict`       : Prédiction
+- `monitoring`    : Monitoring
+
+Exemples :
+
+Exécuter uniquement le prétraitement :
+```bash
+python run_part.py --steps preprocessing
+```
+
+Exécuter clustering puis prédiction :
+```bash
+python run_part.py --steps clustering,predict
+```
+
+Vous pouvez ainsi donner l’ordre exact d’exécution selon vos besoins.
+
+---
+
+### Running a specific part of the pipeline (English)
+
+You can run one or several pipeline steps in a custom order using:
+
+```bash
+python run_part.py --steps preprocessing,clustering,predict
+```
+
+Where `--steps` can be any of:
+
+- `preprocessing` : Data preprocessing
+- `clustering`    : Clustering/Segmentation
+- `regression`    : Regression
+- `train_model`   : Model training
+- `predict`       : Prediction
+- `monitoring`    : Monitoring
+
+Examples:
+
+Run only preprocessing:
+```bash
+python run_part.py --steps preprocessing
+```
+
+Run clustering then prediction:
+```bash
+python run_part.py --steps clustering,predict
+```
+
+This allows you to control the execution order as needed.
+
     #### Options principales
 
+
     - `--no-flask` — Exécute le pipeline sans lancer Flask
-    - `--mlflow` — Active le tracking MLflow
-    - `--test` — Lance les tests
     - `--monitor` — Monitoring uniquement
     - `--steps 1,3,4` — Exécute des étapes spécifiques (voir ci-dessous)
     - `--skip-on-fail` — Continue même si une étape échoue

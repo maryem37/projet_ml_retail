@@ -20,13 +20,14 @@ from datetime import datetime
 
 
 STEPS = [
-    { "id": 1, "name": "Preprocessing",         "script": "src/preprocessing.py",      "required": True  },
-    { "id": 2, "name": "Clustering",             "script": "src/clustering.py",         "required": False },
-    { "id": 3, "name": "Classification",         "script": "src/train_model.py",        "required": True  },
-    { "id": 4, "name": "Tests (pytest)",         "script": "tests/",                    "required": False, "is_pytest": True  },
-    { "id": 5, "name": "Monitoring",             "script": "src/monitoring.py",         "required": False },
-    { "id": 6, "name": "Predict (Demo)",         "script": "src/predict.py",            "required": False },
-    { "id": 7, "name": "Flask Web App",          "script": "app/app.py",                "required": False, "is_server": True  },
+    { "id": 1, "name": "Preprocessing",   "script": "src/preprocessing.py",  "required": True  },
+    { "id": 2, "name": "Clustering",       "script": "src/clustering.py",     "required": False },
+    { "id": 3, "name": "Classification",   "script": "src/train_model.py",    "required": True  },
+    { "id": 4, "name": "Regression",       "script": "src/regression.py",     "required": False },
+    { "id": 5, "name": "Tests (pytest)",   "script": "tests/",                "required": False, "is_pytest": True },
+    { "id": 6, "name": "Monitoring",       "script": "src/monitoring.py",     "required": False },
+    { "id": 7, "name": "Predict (Demo)",   "script": "src/predict.py",        "required": False },
+    { "id": 8, "name": "Flask Web App",    "script": "app/app.py",            "required": False, "is_server": True },
 ]
 
 
@@ -104,11 +105,12 @@ def run_step(step):
 def parse_args():
     p = argparse.ArgumentParser(description="Retail ML Pipeline")
     p.add_argument("--no-flask",     action="store_true", help="Skip Flask app")
+    p.add_argument("--no-regression",action="store_true", help="Skip regression step")
     p.add_argument("--mlflow",       action="store_true", help="Use MLflow version of train_model")
     p.add_argument("--mlflow-ui",    action="store_true", help="Open MLflow UI after pipeline")
     p.add_argument("--test",         action="store_true", help="Run pytest tests")
     p.add_argument("--monitor",      action="store_true", help="Run monitoring")
-    p.add_argument("--steps",        type=str, default=None, help="Run specific steps e.g. --steps 1,3")
+    p.add_argument("--steps",        type=str, default=None, help="Run specific steps e.g. --steps 1,3,4")
     p.add_argument("--skip-on-fail", action="store_true", help="Continue pipeline on failure")
     return p.parse_args()
 
@@ -119,7 +121,7 @@ def main():
 
     steps_to_run = STEPS.copy()
 
-    # Switch to MLflow training script if requested and it exists
+    # Switch to MLflow training script if requested
     if args.mlflow:
         mlflow_script = "src/train_model_mlflow.py"
         if os.path.exists(mlflow_script):
@@ -129,17 +131,20 @@ def main():
                 for s in steps_to_run
             ]
         else:
-            print(f"  ⚠️  --mlflow requested but {mlflow_script} not found.")
-            print(f"       Using src/train_model.py instead.")
+            print(f"  ⚠️  --mlflow requested but {mlflow_script} not found. Using train_model.py.")
 
     # Filter to specific step IDs if requested
     if args.steps:
         ids = [int(x.strip()) for x in args.steps.split(",")]
         steps_to_run = [s for s in steps_to_run if s["id"] in ids]
 
-    # Remove Flask if --no-flask
+    # Skip Flask if --no-flask
     if args.no_flask:
         steps_to_run = [s for s in steps_to_run if not s.get("is_server")]
+
+    # Skip regression if --no-regression
+    if args.no_regression:
+        steps_to_run = [s for s in steps_to_run if s["id"] != 4]
 
     # Only include pytest if --test flag given
     if not args.test:
@@ -147,7 +152,7 @@ def main():
 
     # Only include monitoring if --monitor flag given
     if not args.monitor:
-        steps_to_run = [s for s in steps_to_run if s["id"] != 5]
+        steps_to_run = [s for s in steps_to_run if s["id"] != 6]
 
     total   = len(steps_to_run)
     results = []
