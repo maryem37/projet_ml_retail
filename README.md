@@ -165,44 +165,19 @@ This repository provides a full ML workflow for retail data, including:
     python app/app.py
     ```
 
-    - Accès à l’interface : [http://localhost:5000](http://localhost:5000)
-    - Soumettre des données client pour la prédiction du churn et l’assignation de cluster
+- Access the web interface at [http://localhost:5000](http://localhost:5000)
+- Submit customer data for churn prediction and cluster assignment
 
-    ---
+## Requirements
 
-    ## Étapes du pipeline
+See `requirements.txt` for the full list. Key packages include:
+- pandas, numpy, scikit-learn, matplotlib, seaborn
+- Flask, joblib, imbalanced-learn
 
-    1. **Prétraitement :** Nettoyage et préparation des données (`src/preprocessing.py`)
-    2. **Clustering :** Segmentation client K-Means (`src/clustering.py`)
-    3. **Classification :** Modèle de prédiction du churn (`src/train_model.py`)
-    4. **Tests :** Lancement des tests (pytest)
-    5. **Monitoring :** Détection de dérive (`src/monitoring.py`)
-    6. **Prédiction :** Prédictions batch (`src/predict.py`)
-    7. **Web App :** Application Flask (`app/app.py`)
+## Contributing
 
-    ---
+Contributions are welcome! Please open issues or submit pull requests.
 
-    ## Dépendances
+## License
 
-    Voir `requirements.txt` pour la liste complète. Principaux packages :
-
-    - pandas
-    - numpy
-    - scikit-learn
-    - matplotlib
-    - seaborn
-    - Flask
-    - joblib
-    - imbalanced-learn
-
-    ---
-
-    ## Contribuer
-
-    Les contributions sont les bienvenues ! Merci d’ouvrir une issue ou une pull request.
-
-    ---
-
-    ## Licence
-
-    Ce projet est sous licence MIT.
+This project is licensed under the MIT License.
