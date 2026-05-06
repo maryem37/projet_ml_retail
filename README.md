@@ -206,98 +206,39 @@ Then open: http://localhost:5000
 Example request:
 
 ```bash
-curl -X POST http://localhost:5000/predict \
-    -H "Content-Type: application/json" \
-    -d "{\"tenure\":365,\"frequency\":5,\"monetary\":350,\"spending_cat\":\"Medium\",\"season\":\"Automne\"}"
+python run_part.py --steps clustering,predict
 ```
 
-## Artifacts (what gets saved)
+This allows you to control the execution order as needed.
 
-After a successful run, you should see the following artifacts:
+    #### Options principales
 
-### Classification (churn)
 
-- `models/scaler.pkl` — StandardScaler fitted on training data
-- `models/pca.pkl` — PCA transformer (used when PCA wins)
-- `models/imputation_stats.pkl` — medians/means + country target encoding map
-- `models/churn_model.pkl` — trained **CalibratedClassifierCV** pipeline
-- `models/threshold.pkl` — tuned decision threshold + metadata (`use_pca`, etc.)
+    - `--no-flask` — Exécute le pipeline sans lancer Flask
+    - `--monitor` — Monitoring uniquement
+    - `--steps 1,3,4` — Exécute des étapes spécifiques (voir ci-dessous)
+    - `--skip-on-fail` — Continue même si une étape échoue
 
-### Clustering
+    ### Application web
 
-- `models/kmeans_model.pkl` — trained KMeans
-- `reports/elbow_curve.png`, `reports/silhouette_scores.png`, etc.
+    Lancer l’application Flask (après le pipeline ou chargement des modèles) :
+    ```bash
+    python app/app.py
+    ```
 
-### Regression (revenue)
+- Access the web interface at [http://localhost:5000](http://localhost:5000)
+- Submit customer data for churn prediction and cluster assignment
 
-- `models/regression_model.pkl` — dict artifact with `pipeline`, metrics and metadata
-- `reports/regression_metrics.csv`, `reports/regression_target_distribution.png`, etc.
+## Requirements
 
-## Configuration
+See `requirements.txt` for the full list. Key packages include:
+- pandas, numpy, scikit-learn, matplotlib, seaborn
+- Flask, joblib, imbalanced-learn
 
-Project-wide settings are stored in [config.yaml](config.yaml).
+## Contributing
 
-Currently used by:
+Contributions are welcome! Please open issues or submit pull requests.
 
-- `src/config_loader.py` for robust YAML loading (encoding fallbacks)
-- `src/monitoring.py` for logging configuration (`logs/pipeline.log`, level/format)
+## License
 
-Some scripts still use hard-coded paths (e.g. `data/train_test/*.csv`). If you want everything driven by `config.yaml`, the next step is to route file paths through `src/config_loader.py` across the pipeline.
-
-## Notebooks & reports
-
-- Notebooks live in `notebooks/` (EDA and exploration)
-- Most scripts generate plots/CSVs into `reports/`
-- Monitoring can generate HTML:
-    - `reports/monitoring_report.html`
-    - `reports/drift_report.html`
-
-To open the notebooks:
-
-```bash
-python -m jupyter lab
-```
-
-## Troubleshooting
-
-### “File not found” in `models/`
-
-Run the pipeline first:
-
-```bash
-python main.py --steps 1,3
-```
-
-The Flask app and prediction scripts expect `models/churn_model.pkl`, `models/scaler.pkl`, `models/pca.pkl`, `models/imputation_stats.pkl`, and `models/threshold.pkl`.
-
-### PowerShell cannot activate venv
-
-If PowerShell blocks scripts, run once (as admin) and reopen PowerShell:
-
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
-
-Alternative (only for the current terminal session):
-
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
-```
-
-### Monitoring reports not generated
-
-Install Evidently (optional):
-
-```bash
-python -m pip install evidently
-```
-
-### Pytest step fails / tests folder missing
-
-This repo currently has no `tests/` folder. Only use the pytest step if you add tests.
-
----
-
-## Notes
-
-- This repo does not currently ship a `LICENSE` file; add one if you plan to redistribute.
+This project is licensed under the MIT License.
