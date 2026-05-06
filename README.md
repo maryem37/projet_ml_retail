@@ -30,12 +30,15 @@ End-to-end machine learning project for retail customer intelligence:
 ## Quickstart
 
 ```bash
+cd /path/to/projet_ml_retail
+
 python -m venv venv
 
 # Windows PowerShell
 venv\Scripts\Activate.ps1
 
-pip install -r requirements.txt
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 
 # Run the core pipeline (preprocessing + classification)
 python main.py
@@ -93,7 +96,8 @@ venv\Scripts\Activate.ps1
 # Windows cmd.exe
 venv\Scripts\activate.bat
 
-pip install -r requirements.txt
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
 ### Input data
@@ -145,6 +149,8 @@ python main.py --no-regression     # skip regression step
 python main.py --monitor           # include monitoring step
 python main.py --test              # include pytest step (requires a tests/ folder)
 python main.py --skip-on-fail      # continue even if a required step fails
+python main.py --mlflow            # use MLflow training script if present
+python main.py --mlflow-ui         # open MLflow UI after the pipeline
 ```
 
 ### Monitoring
@@ -158,7 +164,7 @@ Monitoring tries to use **Evidently** to generate HTML reports. If Evidently is 
 Optional install:
 
 ```bash
-pip install evidently
+python -m pip install evidently
 ```
 
 To simulate “production” drift, place:
@@ -246,6 +252,12 @@ Some scripts still use hard-coded paths (e.g. `data/train_test/*.csv`). If you w
     - `reports/monitoring_report.html`
     - `reports/drift_report.html`
 
+To open the notebooks:
+
+```bash
+python -m jupyter lab
+```
+
 ## Troubleshooting
 
 ### “File not found” in `models/`
@@ -266,62 +278,26 @@ If PowerShell blocks scripts, run once (as admin) and reopen PowerShell:
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
+Alternative (only for the current terminal session):
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+```
+
 ### Monitoring reports not generated
 
 Install Evidently (optional):
 
 ```bash
-pip install evidently
+python -m pip install evidently
 ```
+
+### Pytest step fails / tests folder missing
+
+This repo currently has no `tests/` folder. Only use the pytest step if you add tests.
 
 ---
 
-If you want, tell me whether you prefer the README in **English only** or **bilingual (EN/FR)**, and I can adapt the wording and sections accordingly.
-- `predict`       : Prediction
-- `monitoring`    : Monitoring
+## Notes
 
-Examples:
-
-Run only preprocessing:
-```bash
-python run_part.py --steps preprocessing
-```
-
-Run clustering then prediction:
-```bash
-python run_part.py --steps clustering,predict
-```
-
-This allows you to control the execution order as needed.
-
-    #### Options principales
-
-
-    - `--no-flask` — Exécute le pipeline sans lancer Flask
-    - `--monitor` — Monitoring uniquement
-    - `--steps 1,3,4` — Exécute des étapes spécifiques (voir ci-dessous)
-    - `--skip-on-fail` — Continue même si une étape échoue
-
-    ### Application web
-
-    Lancer l’application Flask (après le pipeline ou chargement des modèles) :
-    ```bash
-    python app/app.py
-    ```
-
-- Access the web interface at [http://localhost:5000](http://localhost:5000)
-- Submit customer data for churn prediction and cluster assignment
-
-## Requirements
-
-See `requirements.txt` for the full list. Key packages include:
-- pandas, numpy, scikit-learn, matplotlib, seaborn
-- Flask, joblib, imbalanced-learn
-
-## Contributing
-
-Contributions are welcome! Please open issues or submit pull requests.
-
-## License
-
-This project is licensed under the MIT License.
+- This repo does not currently ship a `LICENSE` file; add one if you plan to redistribute.
