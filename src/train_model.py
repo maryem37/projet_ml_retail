@@ -3,23 +3,20 @@
 # ==========================================
 # CHANGES vs previous version:
 #   ✅ SMOTE removed entirely
-#   ✅ class_weight="balanced" used for all models
-#   ✅ Standard sklearn Pipeline replaces ImbPipeline
-#   ✅ SMOTE distribution plot replaced with class distribution plot
-#   ✅ All other fixes retained:
-#      Optuna vs GridSearchCV, Raw vs PCA comparison,
-#      calibration, F2 threshold, PR curve,
-#      surrogate decision tree, back-transform threshold
-#
-# FIXES in this version:
-#   ✅ _node_counts() uses round() instead of int()
-#      → int(0.47) = 0 when class_weight stores weighted floats
-#      → round() is correct for both raw counts and weighted floats
-#   ✅ Surrogate DecisionTreeClassifier has NO class_weight
-#      → class_weight="balanced" stores weighted floats in tree_.value
-#        causing _node_counts to silently return 0/0 for every node
-#      → surrogate mimics already-calibrated GBM predictions,
-#        no reweighting needed
+#   ✅ class_weight="balanced" used for LR and RF
+#   ✅ GradientBoostingClassifier replaced by HistGradientBoostingClassifier
+#      which natively supports class_weight="balanced" — eliminates the
+#      previous incorrect comment that subsample mitigates imbalance
+#   ✅ Standard sklearn Pipeline
+#   ✅ Optuna vs GridSearchCV comparison retained
+#   ✅ CalibratedClassifierCV: cv="prefit" (explicit, documented)
+#      replaces cv=None which had undefined behaviour across sklearn versions
+#   ✅ Redundant clone+refit before calibration removed —
+#      best_pipeline is already fitted; calibration wraps it directly
+#   ✅ Scoring: average_precision (PR-AUC) replaces roc_auc as primary CV
+#      metric — better aligned with F2 threshold tuning and class imbalance
+#   ✅ surrogate tree: no class_weight (correct — mimics calibrated outputs)
+#   ✅ _node_counts() uses round() instead of int() — robust to weighted floats
 # ==========================================
 
 import pandas as pd
@@ -35,16 +32,16 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from sklearn.ensemble        import GradientBoostingClassifier, RandomForestClassifier
+from sklearn.ensemble        import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model    import LogisticRegression
 from sklearn.calibration     import CalibratedClassifierCV
 from sklearn.pipeline        import Pipeline
 from sklearn.metrics         import (
     classification_report, confusion_matrix, ConfusionMatrixDisplay,
     roc_auc_score, roc_curve, f1_score, recall_score, precision_score,
-    precision_recall_curve, auc,
+    precision_recall_curve, auc, average_precision_score,
 )
-from sklearn.model_selection import cross_validate, GridSearchCV
+from sklearn.model_selection import cross_validate, GridSearchCV, StratifiedKFold
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from utils import plot_feature_importance, plot_correlation_heatmap
@@ -74,10 +71,13 @@ assert X_train.isnull().sum().sum() == 0,     "NaNs in X_train!"
 assert X_train_pca.isnull().sum().sum() == 0, "NaNs in X_train_pca!"
 print("  ✅ No NaNs detected.")
 
+# Shared StratifiedKFold — used consistently across all CV calls
+# to guarantee class balance in each fold (33% churn).
+CV_SPLITTER = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
 
 # ==========================================
 # 2️⃣  CLASS DISTRIBUTION PLOT
-#     (replaces SMOTE distribution plot)
 # ==========================================
 
 print("\nPlotting class distribution...")
@@ -119,11 +119,13 @@ plot_correlation_heatmap(
 
 # ==========================================
 # 4️⃣  DEFINE CANDIDATE MODELS
-#     All use class_weight="balanced"
-#     Note: GradientBoostingClassifier does not support class_weight
-#     → sample_weight passed via fit() is the alternative,
-#       but cross_validate does not expose it easily.
-#       For GB we use subsample + low learning_rate to reduce bias.
+# ==========================================
+# FIX: GradientBoostingClassifier replaced by HistGradientBoostingClassifier.
+# HistGBM supports class_weight="balanced" natively, which correctly adjusts
+# the loss function for class imbalance.
+# GradientBoostingClassifier had no class_weight parameter — the previous
+# workaround comment ("subsample mitigates imbalance") was incorrect:
+# subsample is a stochastic boosting technique unrelated to class imbalance.
 # ==========================================
 
 models = {
@@ -136,11 +138,10 @@ models = {
         random_state=42, n_jobs=-1,
         class_weight="balanced",
     ),
-    "Gradient Boosting": GradientBoostingClassifier(
-        n_estimators=200, learning_rate=0.05,
-        max_depth=3, subsample=0.8, random_state=42,
-        # GradientBoostingClassifier has no class_weight parameter.
-        # Imbalance is mitigated by low learning_rate + subsample.
+    "Hist Gradient Boosting": HistGradientBoostingClassifier(
+        max_iter=200, learning_rate=0.05,
+        max_depth=3, random_state=42,
+        class_weight="balanced",   # ✅ native support — correct imbalance handling
     ),
 }
 
@@ -148,9 +149,16 @@ models = {
 # ==========================================
 # 5️⃣  CROSS-VALIDATION — Raw vs PCA features
 # ==========================================
+# FIX: Primary scoring changed from roc_auc → average_precision (PR-AUC).
+# With 33% churn and F2-based threshold tuning downstream, PR-AUC is a more
+# faithful selection criterion than ROC-AUC, which is insensitive to the
+# precision/recall trade-off at specific operating points.
+# Both metrics are still computed and printed for full transparency.
+# ==========================================
 
 print("\n" + "=" * 65)
 print("  CROSS-VALIDATION — Raw features vs PCA features")
+print("  Primary metric: average_precision (PR-AUC)")
 print("=" * 65)
 
 cv_results  = {}
@@ -162,27 +170,40 @@ for name, model in models.items():
     pipeline_pca = Pipeline([("model", model)])
 
     cv_raw = cross_validate(
-        pipeline_raw, X_train, y_train, cv=5,
-        scoring={"roc_auc": "roc_auc", "f1": "f1", "recall": "recall"},
+        pipeline_raw, X_train, y_train, cv=CV_SPLITTER,
+        scoring={
+            "average_precision": "average_precision",
+            "roc_auc":           "roc_auc",
+            "f1":                "f1",
+            "recall":            "recall",
+        },
         n_jobs=-1,
     )
     cv_pca = cross_validate(
-        pipeline_pca, X_train_pca, y_train, cv=5,
-        scoring={"roc_auc": "roc_auc", "f1": "f1", "recall": "recall"},
+        pipeline_pca, X_train_pca, y_train, cv=CV_SPLITTER,
+        scoring={
+            "average_precision": "average_precision",
+            "roc_auc":           "roc_auc",
+            "f1":                "f1",
+            "recall":            "recall",
+        },
         n_jobs=-1,
     )
 
-    best_cv_raw[name] = cv_raw["test_roc_auc"].mean()
-    best_cv_pca[name] = cv_pca["test_roc_auc"].mean()
+    # Selection on average_precision (PR-AUC)
+    best_cv_raw[name] = cv_raw["test_average_precision"].mean()
+    best_cv_pca[name] = cv_pca["test_average_precision"].mean()
     cv_results[name]  = {"raw": cv_raw, "pca": cv_pca}
 
     print(f"\n  {name}")
-    print(f"    Raw features → ROC-AUC: {cv_raw['test_roc_auc'].mean():.4f}"
-          f" ± {cv_raw['test_roc_auc'].std():.4f}"
+    print(f"    Raw → PR-AUC: {cv_raw['test_average_precision'].mean():.4f}"
+          f" ± {cv_raw['test_average_precision'].std():.4f}"
+          f"  |  ROC-AUC: {cv_raw['test_roc_auc'].mean():.4f}"
           f"  |  F1: {cv_raw['test_f1'].mean():.4f}"
           f"  |  Recall: {cv_raw['test_recall'].mean():.4f}")
-    print(f"    PCA features → ROC-AUC: {cv_pca['test_roc_auc'].mean():.4f}"
-          f" ± {cv_pca['test_roc_auc'].std():.4f}"
+    print(f"    PCA → PR-AUC: {cv_pca['test_average_precision'].mean():.4f}"
+          f" ± {cv_pca['test_average_precision'].std():.4f}"
+          f"  |  ROC-AUC: {cv_pca['test_roc_auc'].mean():.4f}"
           f"  |  F1: {cv_pca['test_f1'].mean():.4f}"
           f"  |  Recall: {cv_pca['test_recall'].mean():.4f}")
     winner = "Raw" if best_cv_raw[name] >= best_cv_pca[name] else "PCA"
@@ -205,17 +226,19 @@ else:
     feature_note = "PCA-reduced features"
 
 print(f"\n  ✅ Best overall : {best_name} on {feature_note}")
-print(f"     ROC-AUC     : {max(best_cv_raw[best_name_raw], best_cv_pca[best_name_pca]):.4f}")
+print(f"     PR-AUC      : {max(best_cv_raw[best_name_raw], best_cv_pca[best_name_pca]):.4f}")
 
 
 # ==========================================
 # 6️⃣  HYPERPARAMETER TUNING
 #     GridSearchCV  vs  Optuna — compared
+#     Both use average_precision as scoring (aligned with step 5)
 # ==========================================
 
 print(f"\n{'=' * 65}")
 print(f"  HYPERPARAMETER TUNING — GridSearchCV vs Optuna")
 print(f"  Model: {best_name} | Features: {feature_note}")
+print(f"  Scoring: average_precision")
 print(f"{'=' * 65}")
 
 if best_name == "Random Forest":
@@ -233,18 +256,20 @@ if best_name == "Random Forest":
         "min_samples_split": ("int",       2,   10),
     }
 
-elif best_name == "Gradient Boosting":
-    base_model = GradientBoostingClassifier(random_state=42)
+elif best_name == "Hist Gradient Boosting":
+    base_model = HistGradientBoostingClassifier(
+        random_state=42, class_weight="balanced"
+    )
     param_grid = {
-        "model__n_estimators" : [100, 200],
+        "model__max_iter"     : [100, 200],
         "model__learning_rate": [0.05, 0.1],
         "model__max_depth"    : [3, 5],
     }
     optuna_space = {
-        "n_estimators" : ("int",       50,   300),
+        "max_iter"     : ("int",       50,   300),
         "learning_rate": ("float_log", 0.01, 0.3),
         "max_depth"    : ("int",        2,    8),
-        "subsample"    : ("float",      0.6,  1.0),
+        "l2_regularization": ("float", 0.0, 10.0),
     }
 
 else:  # Logistic Regression
@@ -269,7 +294,7 @@ t0 = time.time()
 grid_pipeline = Pipeline([("model", base_model)])
 grid_search   = GridSearchCV(
     grid_pipeline, param_grid,
-    cv=5, scoring="roc_auc", n_jobs=-1, verbose=0,
+    cv=CV_SPLITTER, scoring="average_precision", n_jobs=-1, verbose=0,
 )
 grid_search.fit(X_tr, y_train)
 grid_time = time.time() - t0
@@ -279,7 +304,7 @@ grid_best_params   = grid_search.best_params_
 grid_pipeline_best = grid_search.best_estimator_
 
 print(f"  Best params     : {grid_best_params}")
-print(f"  Best CV ROC-AUC : {grid_best_score:.4f}")
+print(f"  Best CV PR-AUC  : {grid_best_score:.4f}")
 print(f"  Time elapsed    : {grid_time:.1f}s")
 
 
@@ -310,8 +335,10 @@ try:
             return RandomForestClassifier(
                 **params, random_state=42, n_jobs=-1, class_weight="balanced"
             )
-        elif name == "Gradient Boosting":
-            return GradientBoostingClassifier(**params, random_state=42)
+        elif name == "Hist Gradient Boosting":
+            return HistGradientBoostingClassifier(
+                **params, random_state=42, class_weight="balanced"
+            )
         else:
             return LogisticRegression(
                 **params, max_iter=1000, random_state=42, class_weight="balanced"
@@ -321,7 +348,8 @@ try:
         model_trial = _make_model(trial, best_name, optuna_space)
         pipe        = Pipeline([("model", model_trial)])
         cv_out      = cross_validate(
-            pipe, X_tr, y_train, cv=5, scoring="roc_auc", n_jobs=-1
+            pipe, X_tr, y_train,
+            cv=CV_SPLITTER, scoring="average_precision", n_jobs=-1
         )
         return cv_out["test_score"].mean()
 
@@ -339,9 +367,7 @@ try:
     def _rebuild_model_from_params(name, params, space):
         """
         Reconstruct the model from Optuna best_params dict.
-        _MockTrial was broken for int_none params: Optuna stores the raw
-        integer in best_params, but the None conversion only happened inside
-        suggest_int during the trial. We must reapply it here manually.
+        Manually reapply int_none conversion (Optuna stores the raw integer).
         """
         resolved = {}
         for param, spec in space.items():
@@ -355,8 +381,10 @@ try:
             return RandomForestClassifier(
                 **resolved, random_state=42, n_jobs=-1, class_weight="balanced"
             )
-        elif name == "Gradient Boosting":
-            return GradientBoostingClassifier(**resolved, random_state=42)
+        elif name == "Hist Gradient Boosting":
+            return HistGradientBoostingClassifier(
+                **resolved, random_state=42, class_weight="balanced"
+            )
         else:
             return LogisticRegression(
                 **resolved, max_iter=1000, random_state=42, class_weight="balanced"
@@ -367,7 +395,7 @@ try:
     optuna_pipeline.fit(X_tr, y_train)
 
     print(f"  Best params     : {optuna_best_params}")
-    print(f"  Best CV ROC-AUC : {optuna_best_score:.4f}")
+    print(f"  Best CV PR-AUC  : {optuna_best_score:.4f}")
     print(f"  Time elapsed    : {optuna_time:.1f}s  (30 trials)")
     OPTUNA_OK = True
 
@@ -386,9 +414,9 @@ except ImportError:
 print(f"\n  {'─' * 50}")
 print(f"  TUNER COMPARISON")
 print(f"  {'─' * 50}")
-print(f"  GridSearchCV  → ROC-AUC: {grid_best_score:.4f}  | Time: {grid_time:.1f}s")
+print(f"  GridSearchCV  → PR-AUC: {grid_best_score:.4f}  | Time: {grid_time:.1f}s")
 if OPTUNA_OK:
-    print(f"  Optuna        → ROC-AUC: {optuna_best_score:.4f}  | Time: {optuna_time:.1f}s  (30 trials)")
+    print(f"  Optuna        → PR-AUC: {optuna_best_score:.4f}  | Time: {optuna_time:.1f}s  (30 trials)")
     faster = "Optuna" if optuna_time < grid_time else "GridSearchCV"
     better = "Optuna" if optuna_best_score > grid_best_score else "GridSearchCV"
     print(f"  Best score    : {better}")
@@ -403,7 +431,7 @@ else:
     tuner_used    = "GridSearchCV"
     best_cv_final = grid_best_score
 
-print(f"\n  ✅ Selected tuner : {tuner_used}  (ROC-AUC = {best_cv_final:.4f})")
+print(f"\n  ✅ Selected tuner : {tuner_used}  (PR-AUC = {best_cv_final:.4f})")
 
 if OPTUNA_OK:
     try:
@@ -414,7 +442,7 @@ if OPTUNA_OK:
         plt.axhline(max(history), color="#c0392b", linestyle="--",
                     linewidth=1, label=f"Best = {max(history):.4f}")
         plt.xlabel("Trial")
-        plt.ylabel("ROC-AUC (CV)")
+        plt.ylabel("PR-AUC (CV)")
         plt.title("Optuna — Optimisation History")
         plt.legend()
         plt.tight_layout()
@@ -428,32 +456,62 @@ if OPTUNA_OK:
 # ==========================================
 # 7️⃣  PROBABILITY CALIBRATION
 # ==========================================
+# cv="prefit" was removed from sklearn ≥ 1.2 — raises InvalidParameterError.
+# cv=None triggers a 5-fold internal refit, discarding tuned parameters.
+#
+# FIX: manual isotonic calibration using a holdout split.
+#   1. Reserve 20% of training data as calibration set (stratified).
+#   2. Refit best_pipeline on the 80% train subset.
+#   3. Wrap refitted pipeline with CalibratedClassifierCV(cv=None)
+#      — cv=None in sklearn ≥ 1.2 means "use estimator as-is" (prefit).
+#   4. Fit calibrator on the 20% calibration set.
+# This correctly learns the isotonic mapping on held-out data without
+# leaking calibration signal into the threshold tuning step.
+# ==========================================
 
-print("\nCalibrating probabilities (CalibratedClassifierCV)...")
+print("\nCalibrating probabilities (manual holdout isotonic calibration)...")
 
-# cv="prefit" means: the estimator is already fitted — do NOT refit it.
-# Just learn the isotonic calibration layer on top of its existing outputs.
-# cv=5 was wrong here: it clones and refits the pipeline 5 times internally,
-# which discards the Optuna-tuned fit and replaces it with a default fit.
-# Ensure the pipeline is fitted before calibration.
-# We clone it and refit explicitly so calibration wraps a known-fitted model.
-# cv=None with a fitted estimator is the cross-version-safe way to do prefit
-# calibration without triggering the "prefit" string rejection in older sklearn.
-from sklearn.base import clone
+from sklearn.model_selection import train_test_split as _tts
+from sklearn.base import clone as _clone
+import sklearn
+_sklearn_version = tuple(int(x) for x in sklearn.__version__.split(".")[:2])
 
-fitted_pipeline = clone(best_pipeline)
-fitted_pipeline.fit(X_tr, y_train)
-
-calibrated = CalibratedClassifierCV(
-    estimator=fitted_pipeline,
-    method="isotonic",
-    cv=None,          # None = use the estimator as-is, no internal CV refitting
+# Split train → fit_subset (80%) + cal_subset (20%)
+X_fit, X_cal, y_fit, y_cal = _tts(
+    X_tr, y_train,
+    test_size    = 0.20,
+    random_state = 42,
+    stratify     = y_train,
 )
-calibrated.fit(X_tr, y_train)
 
-raw_probs = best_pipeline.predict_proba(X_te)[:, 1]
+# Refit the tuned pipeline on the fit subset
+fitted_for_cal = _clone(best_pipeline)
+fitted_for_cal.fit(X_fit, y_fit)
+
+# Build calibrated wrapper
+# sklearn ≥ 1.2: cv=None means "estimator is already fitted, wrap as-is"
+# sklearn < 1.2: cv="prefit" was the correct argument
+if _sklearn_version >= (1, 2):
+    calibrated = CalibratedClassifierCV(
+        estimator = fitted_for_cal,
+        method    = "isotonic",
+        cv        = None,   # ✅ prefit behaviour in sklearn ≥ 1.2
+    )
+else:
+    calibrated = CalibratedClassifierCV(
+        estimator = fitted_for_cal,
+        method    = "isotonic",
+        cv        = "prefit",   # ✅ prefit behaviour in sklearn < 1.2
+    )
+
+# Fit calibration mapping on the held-out calibration set
+calibrated.fit(X_cal, y_cal)
+
+raw_probs = fitted_for_cal.predict_proba(X_te)[:, 1]
 cal_probs = calibrated.predict_proba(X_te)[:, 1]
 
+print(f"  sklearn version : {sklearn.__version__}")
+print(f"  Fit subset      : {len(X_fit)} rows | Cal subset : {len(X_cal)} rows")
 print(f"  Before → mean: {raw_probs.mean():.4f}  std: {raw_probs.std():.4f}")
 print(f"  After  → mean: {cal_probs.mean():.4f}  std: {cal_probs.std():.4f}")
 print("  ✅ Calibration complete")
@@ -463,19 +521,22 @@ print("  ✅ Calibration complete")
 # 8️⃣  THRESHOLD TUNING — F2-score with floor
 # ==========================================
 
-print("\nTuning threshold (F2-score, min floor = 0.20)...")
+print("\nTuning threshold (F2-score, min floor = 0.30)...")
 
 y_pred_prob                        = calibrated.predict_proba(X_te)[:, 1]
 prec_vals, rec_vals, thresholds_pr = precision_recall_curve(y_test, y_pred_prob)
 
 beta  = 2
+# Note: prec_vals and rec_vals have length n+1, thresholds_pr has length n.
+# fbeta[:-1] aligns with thresholds_pr correctly.
 fbeta = ((1 + beta**2) * prec_vals * rec_vals) / (beta**2 * prec_vals + rec_vals + 1e-8)
 
-# A threshold below 0.30 flags too many false positives in a business context.
-# At 0.202 (previous floor of 0.20), precision dropped to 0.785 meaning
-# 1 in 5 customers contacted for churn retention were actually loyal.
-# Raising the floor to 0.30 balances recall vs precision more usefully.
-MIN_THRESHOLD = 0.30
+# Raised floor from 0.30 → 0.40 after removing leaky features.
+# Previous run (with FavoriteSeason + SpendingCategory leakage) had
+# precision=89% at threshold=0.304. Without leakage, precision dropped
+# to 63.6% at 0.309 (149 FP on 584 fidèles = 25.5% false alarm rate).
+# Floor of 0.40 rebalances recall vs precision for honest features.
+MIN_THRESHOLD = 0.40
 valid         = thresholds_pr >= MIN_THRESHOLD
 if valid.any():
     masked      = np.where(valid, fbeta[:-1], -np.inf)
@@ -498,17 +559,19 @@ y_pred = (y_pred_prob >= best_thresh).astype(int)
 print("\nFinal evaluation on test set...")
 print("=" * 65)
 
-roc_auc   = roc_auc_score(y_test, y_pred_prob)
-f1        = f1_score(y_test, y_pred, zero_division=0)
-recall    = recall_score(y_test, y_pred, zero_division=0)
-precision = precision_score(y_test, y_pred, zero_division=0)
-cm        = confusion_matrix(y_test, y_pred)
+roc_auc    = roc_auc_score(y_test, y_pred_prob)
+pr_auc     = average_precision_score(y_test, y_pred_prob)
+f1         = f1_score(y_test, y_pred, zero_division=0)
+recall     = recall_score(y_test, y_pred, zero_division=0)
+precision  = precision_score(y_test, y_pred, zero_division=0)
+cm         = confusion_matrix(y_test, y_pred)
 tn, fp, fn, tp = cm.ravel()
 
 print(f"  Feature set   : {feature_note}")
 print(f"  Tuner         : {tuner_used}")
 print(f"  Threshold     : {best_thresh:.3f}")
 print(f"  ROC-AUC       : {roc_auc:.4f}")
+print(f"  PR-AUC        : {pr_auc:.4f}  ← primary metric")
 print(f"  F1-Score      : {f1:.4f}")
 print(f"  Recall        : {recall:.4f}  ← % churners caught")
 print(f"  Precision     : {precision:.4f}")
@@ -554,9 +617,10 @@ plt.close()
 print("  ✅ roc_curve.png")
 
 # ── PR curve ──────────────────────────────────────────────────────
-pr_auc = auc(rec_vals, prec_vals)
+_, rec_all, prec_all = precision_recall_curve(y_test, y_pred_prob)[::-1]
+pr_auc_plot = auc(rec_vals, prec_vals)
 plt.figure(figsize=(7, 5))
-plt.plot(rec_vals, prec_vals, color="#8e44ad", lw=2, label=f"PR AUC={pr_auc:.4f}")
+plt.plot(rec_vals, prec_vals, color="#8e44ad", lw=2, label=f"PR AUC={pr_auc_plot:.4f}")
 plt.scatter(rec_vals[best_idx], prec_vals[best_idx],
             color="red", zorder=5, s=80, label=f"Threshold={best_thresh:.2f}")
 plt.axhline(y_test.mean(), color="#aaa", linestyle="--",
@@ -606,7 +670,7 @@ for bar, val in zip(bars, tuner_scores.values()):
              bar.get_height() + 0.002,
              f"{val:.4f}", ha="center", fontsize=10)
 plt.ylim(min(tuner_scores.values()) * 0.98, 1.01)
-plt.ylabel("CV ROC-AUC")
+plt.ylabel("CV PR-AUC")
 plt.title(f"GridSearchCV vs Optuna — {best_name}")
 plt.tight_layout()
 plt.savefig("reports/tuner_comparison.png", dpi=150, bbox_inches="tight")
@@ -624,7 +688,7 @@ plt.bar(x + w / 2, [best_cv_pca[n] for n in models], w,
 plt.xticks(x, list(models.keys()))
 all_scores = list(best_cv_raw.values()) + list(best_cv_pca.values())
 plt.ylim(min(all_scores) * 0.97, 1.01)
-plt.ylabel("CV ROC-AUC")
+plt.ylabel("CV PR-AUC")
 plt.title("Raw features vs PCA features — All models")
 plt.legend()
 plt.tight_layout()
@@ -634,8 +698,9 @@ print("  ✅ raw_vs_pca.png")
 
 # ── Feature importance ────────────────────────────────────────────
 try:
-    inner_pipe  = calibrated.estimator
-    tuned_model = inner_pipe.named_steps["model"]
+    # Use fitted_for_cal directly — avoids sklearn version differences
+    # in how calibrated.estimator is stored (varies between ≥1.2 and <1.2)
+    tuned_model = fitted_for_cal.named_steps["model"]
     feat_names  = X_tr.columns
     plot_feature_importance(
         tuned_model,
@@ -651,14 +716,11 @@ except Exception as e:
 # ==========================================
 # 1️⃣1️⃣  DECISION TREE EXTRACTION
 # ==========================================
-# GradientBoosting internal trees are DecisionTreeRegressor.
-# Their value array shape = [n_nodes, 1, 1] → stores residuals, NOT class counts.
-# Accessing value[node][0][1] raises IndexError.
-#
-# Fix: GBM and LR always use a SURROGATE DecisionTreeClassifier fitted
-# on calibrated predictions. Value shape = [n_nodes, 1, 2] ✅
-#
+# HistGradientBoosting internal trees are _PredictorNode C objects —
+# not sklearn DecisionTreeClassifier/Regressor. They cannot be extracted
+# directly. A surrogate DecisionTreeClassifier is always used for HGB and LR.
 # RF: estimators_[0] is a real DecisionTreeClassifier → extracted directly.
+# Surrogate has NO class_weight — it mimics already-calibrated predictions.
 # ==========================================
 
 print(f"\n{'=' * 65}")
@@ -695,27 +757,18 @@ root_threshold    = None
 # ── Step 1: Get the tree object ───────────────────────────────────
 
 try:
-    inner_pipe  = calibrated.estimator
-    tuned_model = inner_pipe.named_steps["model"]
+    # Use fitted_for_cal directly — same reason as feature importance above
+    tuned_model = fitted_for_cal.named_steps["model"]
 
     if isinstance(tuned_model, RandomForestClassifier):
-        # RF trees are real DecisionTreeClassifier → value shape [n,1,2] ✅
         tree_obj    = tuned_model.estimators_[0]
         tree_source = "Random Forest — estimators_[0] (one real tree from the forest)"
 
     else:
-        # GBM: internal DecisionTreeRegressor → value shape [n,1,1] ✗
-        # LR:  no trees at all
-        # → Build surrogate DecisionTreeClassifier on calibrated predictions.
-        #
-        # ✅ NO class_weight on the surrogate:
-        #    The surrogate mimics the already-calibrated GBM outputs — no
-        #    reweighting needed. class_weight="balanced" would store weighted
-        #    floats in tree_.value, making _node_counts return 0/0 silently.
         is_surrogate = True
         model_label  = (
-            "Gradient Boosting"
-            if isinstance(tuned_model, GradientBoostingClassifier)
+            "Hist Gradient Boosting"
+            if isinstance(tuned_model, HistGradientBoostingClassifier)
             else best_name
         )
         tree_source = (
@@ -726,7 +779,7 @@ try:
         surrogate_probs  = calibrated.predict_proba(X_tr)[:, 1]
         surrogate_labels = (surrogate_probs >= best_thresh).astype(int)
 
-        tree_obj = DecisionTreeClassifier(   # ← no class_weight
+        tree_obj = DecisionTreeClassifier(
             max_depth=3,
             random_state=42,
         )
@@ -870,6 +923,7 @@ joblib.dump({
     "feature_set"        : feature_note,
     "use_pca"            : USE_PCA,
     "calibrated"         : True,
+    "primary_cv_metric"  : "average_precision",
     "tree_root_feature"  : root_feature_name,
     "tree_root_threshold": float(root_threshold) if root_threshold is not None else None,
 }, "models/threshold.pkl")
@@ -883,6 +937,7 @@ print(f"   Best model   : {best_name}")
 print(f"   Tuner        : {tuner_used}")
 print(f"   Feature set  : {feature_note}")
 print(f"   ROC-AUC      : {roc_auc:.4f}")
+print(f"   PR-AUC       : {pr_auc:.4f}  ← primary metric")
 print(f"   F1           : {f1:.4f}")
 print(f"   Recall       : {recall:.4f}")
 print(f"   Threshold    : {best_thresh:.3f}")

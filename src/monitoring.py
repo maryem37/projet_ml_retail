@@ -9,6 +9,16 @@
 #   ✅ __main__ guard wraps all execution logic
 #   ✅ column_mapping built before report.run()
 #   ✅ predict_proba used for AUC — not predict
+#
+# FIXES in this version (v2):
+#   ✅ trained_model and X_train now correctly extracted/loaded
+#      inside the EVIDENTLY_OK block — were NameError before
+#   ✅ X_ref_raw used for predict_proba BEFORE target/prediction
+#      columns are added to reference — eliminates fragile ordering bug
+#   ✅ roc_ref > 0.99 warning replaced with clearer placeholder warning
+#      that fires based on actual mode (placeholder vs production)
+#   ✅ _print_drift_summary called in both Evidently and fallback paths
+#      for consistent output format
 # ==========================================
 
 import pandas as pd
@@ -82,15 +92,20 @@ def _print_drift_summary(roc_ref: float, roc_cur: float, n_features: int,
 def _simple_monitoring(
     reference          : pd.DataFrame,
     current            : pd.DataFrame,
-    calibrated_pipeline,          # ← full pipeline, not inner model
+    calibrated_pipeline,
     feature_names,
+    roc_ref            : float,
+    roc_cur            : float,
+    placeholder        : bool = False,
 ) -> None:
     """
     Simplified monitoring without Evidently.
     Uses KS test to detect feature drift manually.
+    FIX v2: roc_ref and roc_cur are passed in (computed outside on raw feature
+    DataFrames) instead of recomputed here, avoiding the column ordering
+    fragility issue (target/prediction columns must not be in the input).
     """
     import scipy.stats as stats
-    from sklearn.metrics import roc_auc_score
 
     logger.info("Running simplified drift detection (KS test)...")
 
@@ -118,8 +133,7 @@ def _simple_monitoring(
                 "cur_mean": round(cur_vals.mean(), 3),
             })
 
-    # ✅ FIX: guard against empty drifted list
-    #         pd.DataFrame([]) has no columns → .sort_values("ks_stat") crashes
+    # ✅ Guard against empty drifted list
     if drifted:
         drift_df = pd.DataFrame(drifted).sort_values("ks_stat", ascending=False)
     else:
@@ -131,6 +145,8 @@ def _simple_monitoring(
 
     print("\n" + "=" * 60)
     print("  SIMPLIFIED MONITORING RESULTS")
+    if placeholder:
+        print("  ⚠️  PLACEHOLDER MODE — not real production monitoring")
     print("=" * 60)
     print(f"  Features checked : {len(numeric_cols)}")
     print(f"  Drifted features : {len(drifted)}  (KS test p < 0.05)")
@@ -146,21 +162,12 @@ def _simple_monitoring(
     else:
         print("  ✅ No significant drift detected.")
 
-    # Model performance — drop target/prediction before scoring
-    ref_features = reference.drop(columns=["target", "prediction"], errors="ignore")
-    cur_features = current.drop(columns=["target", "prediction"],   errors="ignore")
-
-    ref_probs = calibrated_pipeline.predict_proba(ref_features)[:, 1]
-    cur_probs = calibrated_pipeline.predict_proba(cur_features)[:, 1]
-
-    ref_auc     = roc_auc_score(reference["target"], ref_probs)
-    cur_auc     = roc_auc_score(current["target"],   cur_probs)
-    degradation = (ref_auc - cur_auc) * 100
+    degradation = (roc_ref - roc_cur) * 100
     status      = "⚠️  DEGRADED" if degradation > 5 else "✅ STABLE"
 
     print(f"\n  Model Performance:")
-    print(f"    Reference ROC-AUC : {ref_auc:.4f}")
-    print(f"    Current   ROC-AUC : {cur_auc:.4f}")
+    print(f"    Reference ROC-AUC : {roc_ref:.4f}")
+    print(f"    Current   ROC-AUC : {roc_cur:.4f}")
     print(f"    Degradation       : {degradation:.2f}%  {status}")
     print(f"\n  Drift report saved → reports/drift_summary.csv")
     print("=" * 60)
@@ -188,15 +195,15 @@ if __name__ == "__main__":
 
     logger.info("Using threshold: %.3f", THRESHOLD)
 
+    # ── 2. Build reference / current datasets ─────────────
     # Reference = test set (last known good labelled data).
     # Current   = new production data arriving over time.
-    # Using train as reference was wrong: it gives AUC ~0.999 (in-sample fit),
-    # making every future comparison look like degradation even when the model
-    # is stable. True drift monitoring compares two slices of held-out data.
     PRODUCTION_DATA_PATH  = "data/production/new_customers.csv"
     PRODUCTION_LABEL_PATH = "data/production/new_customers_labels.csv"
 
-    if not os.path.exists(PRODUCTION_DATA_PATH):
+    IS_PLACEHOLDER = not os.path.exists(PRODUCTION_DATA_PATH)
+
+    if IS_PLACEHOLDER:
         logger.warning(
             "No production data found at %s. "
             "Splitting test set 50/50 as a placeholder. "
@@ -205,8 +212,9 @@ if __name__ == "__main__":
         )
         logger.warning(
             "PLACEHOLDER MODE: results below are NOT real drift monitoring. "
-            "With only ~437 rows per side, AUC differences of 1-3%% are "
+            "With only ~%d rows per side, AUC differences of 1-3%% are "
             "pure random noise. Do not act on these numbers.",
+            len(X_test) // 2,
         )
         split     = len(X_test) // 2
         X_ref_raw = X_test.iloc[:split].reset_index(drop=True)
@@ -224,32 +232,28 @@ if __name__ == "__main__":
         len(X_ref_raw), len(X_cur_raw)
     )
 
-    reference = X_ref_raw.copy()
-    current   = X_cur_raw.copy()
-    reference["target"] = y_ref.values
-    current["target"]   = y_cur.values
-
-    # Use the full calibrated pipeline — NOT the inner model.
-    # The inner model returns uncalibrated probabilities, which are
-    # inconsistent with the threshold that was tuned on calibrated outputs.
+    # ── 3. Compute probabilities on raw feature DataFrames ─
+    # FIX v2: predict_proba is called on X_ref_raw / X_cur_raw BEFORE
+    # adding target/prediction columns to reference/current DataFrames.
+    # This eliminates the fragile ordering dependency: if target/prediction
+    # were added first, predict_proba would receive unknown columns and crash.
     from sklearn.metrics import roc_auc_score
+
     ref_probs = pipeline.predict_proba(X_ref_raw)[:, 1]
     cur_probs = pipeline.predict_proba(X_cur_raw)[:, 1]
 
+    roc_ref = roc_auc_score(y_ref, ref_probs)
+    roc_cur = roc_auc_score(y_cur, cur_probs)
+
+    # Now build the annotated DataFrames for Evidently / drift reporting
+    reference               = X_ref_raw.copy()
+    current                 = X_cur_raw.copy()
+    reference["target"]     = y_ref.values
+    current["target"]       = y_cur.values
     reference["prediction"] = (ref_probs >= THRESHOLD).astype(int)
     current["prediction"]   = (cur_probs >= THRESHOLD).astype(int)
 
-    roc_ref = roc_auc_score(y_ref, ref_probs)
-    roc_cur = roc_auc_score(y_cur, cur_probs)
-    # After computing roc_ref and roc_cur, add:
-    if roc_ref > 0.99:
-         logger.warning(
-             "Reference ROC-AUC=%.4f is suspiciously high — "
-              "possible overfitting. Consider stronger regularization or "
-             "cross-validated evaluation instead of train-set scoring.",
-                roc_ref
-         )
-    # ── 3. Evidently or fallback ───────────────────────────
+    # ── 4. Evidently or fallback ───────────────────────────
     try:
         from evidently.report import Report
         from evidently.metric_preset import (
@@ -274,6 +278,21 @@ if __name__ == "__main__":
 
     if EVIDENTLY_OK:
 
+        # FIX v2: trained_model and X_train must be extracted/loaded here.
+        # They were undefined in the previous version → NameError at runtime.
+        # fitted_for_cal is stored inside calibrated differently across sklearn versions.
+        # Safest approach: access the estimator attribute then named_steps.
+        try:
+            inner_pipeline = pipeline.estimator              # sklearn Pipeline
+            trained_model  = inner_pipeline.named_steps["model"]
+        except AttributeError:
+            # Fallback: calibrated wraps the pipeline directly
+            trained_model  = pipeline.named_steps["model"]
+        X_train = pd.read_csv("data/train_test/X_train.csv")
+
+        important_features = _get_top_features(trained_model, X_train.columns, n=15)
+        drift_cols         = important_features + ["target", "prediction"]
+
         col_map = _get_column_mapping(reference)
 
         report = Report(metrics=[
@@ -290,11 +309,8 @@ if __name__ == "__main__":
         report.save_html("reports/monitoring_report.html")
         logger.info("Full report saved → reports/monitoring_report.html")
 
-        important_features = _get_top_features(trained_model, X_train.columns, n=15)
-        drift_cols         = important_features + ["target", "prediction"]
-        drift_col_map      = _get_column_mapping(reference[drift_cols])
-
-        drift_report = Report(metrics=[
+        drift_col_map = _get_column_mapping(reference[drift_cols])
+        drift_report  = Report(metrics=[
             DatasetDriftMetric(),
         ] + [
             ColumnDriftMetric(column_name=col)
@@ -308,7 +324,23 @@ if __name__ == "__main__":
         drift_report.save_html("reports/drift_report.html")
         logger.info("Drift report saved → reports/drift_report.html")
 
-        _print_drift_summary(roc_ref, roc_cur, len(important_features),placeholder=not os.path.exists(PRODUCTION_DATA_PATH))
+        _print_drift_summary(
+            roc_ref     = roc_ref,
+            roc_cur     = roc_cur,
+            n_features  = len(important_features),
+            placeholder = IS_PLACEHOLDER,
+        )
 
     else:
-        _simple_monitoring(reference, current, pipeline, X_test.columns) 
+        # Fallback: simplified KS-based monitoring
+        # FIX v2: _simple_monitoring now receives pre-computed roc_ref/roc_cur
+        # and IS_PLACEHOLDER flag — consistent output with the Evidently path.
+        _simple_monitoring(
+            reference           = reference,
+            current             = current,
+            calibrated_pipeline = pipeline,
+            feature_names       = X_test.columns,
+            roc_ref             = roc_ref,
+            roc_cur             = roc_cur,
+            placeholder         = IS_PLACEHOLDER,
+        )

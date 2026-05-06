@@ -1,4 +1,4 @@
 Model,Scale,R2,MAE,MedAE,RMSE
-Random Forest,Log (training),0.9409,0.2407,—,0.3472
-Random Forest,Capped £ (99th pct cap),0.8723,339.72,108.86,875.05
-Random Forest,Full uncapped £,0.1735,780.08,108.86,9349.72
+Gradient Boosting,Log (training),0.8725,0.3268,—,0.5098
+Gradient Boosting,Capped £ (99th pct cap),0.8186,408.83,130.11,1042.76
+Gradient Boosting,Full uncapped £,0.2784,800.85,130.11,8736.07

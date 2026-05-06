@@ -1,22 +1,25 @@
-Source : Surrogate DecisionTreeClassifier — fitted on Gradient Boosting calibrated predictions (max_depth=3)
-Model  : Gradient Boosting
+Source : Surrogate DecisionTreeClassifier — fitted on Hist Gradient Boosting calibrated predictions (max_depth=3)
+Model  : Hist Gradient Boosting
 
-|--- CustomerTenureDays <= 0.4179
-|   |--- FavoriteSeason_Hiver <= 0.6783
-|   |   |--- FavoriteSeason_Printemps <= 0.7594
-|   |   |   |--- weights: [1009.0000, 331.0000] class: 0
-|   |   |--- FavoriteSeason_Printemps >  0.7594
-|   |   |   |--- weights: [31.0000, 424.0000] class: 1
-|   |--- FavoriteSeason_Hiver >  0.6783
-|   |   |--- weights: [0.0000, 411.0000] class: 1
-|--- CustomerTenureDays >  0.4179
-|   |--- CustomerTenureDays <= 0.7034
-|   |   |--- FavoriteSeason_Hiver <= 0.6783
-|   |   |   |--- weights: [193.0000, 9.0000] class: 0
-|   |   |--- FavoriteSeason_Hiver >  0.6783
-|   |   |   |--- weights: [3.0000, 40.0000] class: 1
-|   |--- CustomerTenureDays >  0.7034
-|   |   |--- UniqueProducts <= -0.6824
-|   |   |   |--- weights: [1.0000, 1.0000] class: 0
-|   |   |--- UniqueProducts >  -0.6824
-|   |   |   |--- weights: [1038.0000, 6.0000] class: 0
+|--- CustomerTenureDays <= 0.4555
+|   |--- RegYear <= 2010.5000
+|   |   |--- UniqueProducts <= 0.2536
+|   |   |   |--- weights: [27.0000, 664.0000] class: 1
+|   |   |--- UniqueProducts >  0.2536
+|   |   |   |--- weights: [38.0000, 21.0000] class: 0
+|   |--- RegYear >  2010.5000
+|   |   |--- RegMonth <= 6.5000
+|   |   |   |--- weights: [340.0000, 519.0000] class: 1
+|   |   |--- RegMonth >  6.5000
+|   |   |   |--- weights: [589.0000, 37.0000] class: 0
+|--- CustomerTenureDays >  0.4555
+|   |--- CustomerTenureDays <= 0.6133
+|   |   |--- RegYear <= 2010.5000
+|   |   |   |--- weights: [37.0000, 28.0000] class: 0
+|   |   |--- RegYear >  2010.5000
+|   |   |   |--- weights: [64.0000, 0.0000] class: 0
+|   |--- CustomerTenureDays >  0.6133
+|   |   |--- MonetaryTotal <= -0.3184
+|   |   |   |--- weights: [58.0000, 7.0000] class: 0
+|   |   |--- MonetaryTotal >  -0.3184
+|   |   |   |--- weights: [1066.0000, 2.0000] class: 0

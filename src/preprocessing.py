@@ -17,6 +17,26 @@
 #   ✅ RegistrationDate parser fixed (dayfirst=False) to suppress UserWarning
 #      caused by mixed US/UK/ISO date formats in raw data
 #   ✅ Target encoding groupby hardened (.values strips index) → index-safe
+#
+# FIXES in this version (v3):
+#   ✅ Log-transforms extended to all high-skew columns detected in EDA
+#      (|skew| > 1): CancelledTransactions, SupportTicketsCount, ReturnRatio,
+#      AvgDaysBetweenPurchases, ZeroPriceCount, UniqueCountries,
+#      AvgProductsPerTransaction, MonetaryAvg, WeekendPurchaseRatio,
+#      MonetaryMax — in addition to the original 3 (MonetaryTotal,
+#      Frequency, AvgBasketValue)
+#   ✅ RegYear added back — customer cohort signal (year of registration)
+#      has predictive value in a multi-year snapshot dataset
+#   ✅ AvgBasketValue computed BEFORE log-transforms to ensure consistency
+#      (was already the case but now explicitly ordered and commented)
+#   ✅ DisengagementScore formula hardened — ReturnRatio and
+#      CancelledTransactions are each standardised before combination
+#      instead of using the arbitrary /10 divisor
+#   ✅ WeekendPreference OHE coverage confirmed — verified it is object dtype
+#      so pd.get_dummies handles it correctly
+#   ✅ IsPrivateIP and IPClass value/signal noted in comments —
+#      these are low-signal features; flag for potential drop post-training
+#      if feature importance is negligible
 # ==========================================
 
 import pandas as pd
@@ -41,23 +61,25 @@ print(f"  Raw shape : {df.shape}")
 # ==========================================
 # 2️⃣ PARSE RegistrationDate → features
 # ==========================================
-# ✅ FIX: dayfirst=False to handle mixed US/UK/ISO formats without warning.
-#    Formats found in data: "12/09/2009" (UK), "2010-10-04" (ISO), "10/18/2010" (US)
-#    dayfirst=True caused UserWarning on US-format dates (no 18th month).
-#    dayfirst=False handles all three formats cleanly via dateutil fallback.
-#    Failures become NaT (coerce) — filled with median post-split.
+# FIX v3: RegYear is now KEPT — year of registration encodes customer cohort
+# (customers registered in 2009 vs 2015 have very different tenure profiles).
+# In a multi-year snapshot dataset, RegYear carries genuine predictive signal.
+# format="mixed" + dayfirst=False handles all three formats cleanly:
+#   UK  "12/09/2009", ISO "2010-10-04", US "10/18/2010"
+# Failures become NaT (coerce) → filled with median post-split.
 # ==========================================
 
 print("Parsing RegistrationDate...")
 
 if "RegistrationDate" in df.columns:
     df["RegistrationDate"] = pd.to_datetime(
-    df["RegistrationDate"],
-    format="mixed",   # ✅ replaces dayfirst=False — suppresses the warning
-    dayfirst=False,
-    errors="coerce"
-)
+        df["RegistrationDate"],
+        format="mixed",
+        dayfirst=False,
+        errors="coerce"
+    )
 
+    df["RegYear"]    = df["RegistrationDate"].dt.year
     df["RegMonth"]   = df["RegistrationDate"].dt.month
     df["RegDay"]     = df["RegistrationDate"].dt.day
     df["RegWeekday"] = df["RegistrationDate"].dt.weekday   # 0=Mon, 6=Sun
@@ -66,7 +88,7 @@ if "RegistrationDate" in df.columns:
     if n_nat > 0:
         print(f"  ⚠️  {n_nat} unparseable dates → NaT (will be imputed post-split)")
 
-    print(f"  ✅ Extracted: RegMonth, RegDay, RegWeekday (RegYear skipped — redundant)")
+    print(f"  ✅ Extracted: RegYear, RegMonth, RegDay, RegWeekday")
 
     df = df.drop(columns=["RegistrationDate"])
     print(f"  ✅ RegistrationDate dropped after extraction")
@@ -78,6 +100,8 @@ if "RegistrationDate" in df.columns:
 # Features extracted:
 #   IsPrivateIP  — 1 if RFC1918 private address (10.x, 192.168.x, 172.16-31.x)
 #   IPClass      — Class A (1-126), B (128-191), C (192-223), Other
+# Note: these are low-signal features in a retail context.
+# Retain for now; drop post-training if feature importance is negligible.
 # ==========================================
 
 print("Engineering LastLoginIP features...")
@@ -140,24 +164,46 @@ columns_to_drop = [
     # --- Leaky: circular (Churn defined from Recency) ---
     "Recency",                # corr=0.859 with Churn
     # --- Constant across all rows: FirstPurchaseDaysAgo=374 for every customer ---
-    # Computed as (snapshot_date - dataset_start_date), not per-customer.
-    # Correlation with Churn (0.222) was a statistical artifact — carries zero signal.
     "FirstPurchaseDaysAgo",
     # --- Non-significant: p=0.365, corr=+0.014 ---
     "SatisfactionScore",
-    # --- NEW: Multicollinearity & Redundancy Drops ---
+    # --- Multicollinearity & Redundancy Drops ---
     "AvgLinesPerInvoice",    # r=0.96 with AvgProductsPerTransaction
     "TotalQuantity",         # r=0.92 with MonetaryTotal
     "MonetaryStd",           # Highly entangled cluster
     "MonetaryMin",           # Highly entangled cluster
     "MinQuantity",           # Highly entangled cluster
     "MaxQuantity",           # Highly entangled cluster (Keeping MonetaryMax)
-     # RegYear: never extracted — see RegistrationDate block above
-    # PreferredMonth: temporal leakage — in a snapshot dataset it encodes
-    # time-since-last-activity rather than genuine behaviour. The surrogate
-    # tree confirmed this: PreferredMonth ≤ 8.5 → 91.4% churn on the RIGHT
-    # branch, which means "purchased mainly after August = churned by cutoff".
+    # PreferredMonth: temporal leakage — encodes time-since-last-activity
+    # rather than genuine behaviour. Surrogate tree confirmed: PreferredMonth
+    # ≤ 8.5 → 91.4% churn on RIGHT branch (purchased mainly after August
+    # = churned by cutoff snapshot date).
     "PreferredMonth",
+    # FavoriteSeason: CONFIRMED leakage (diagnostic 2026-05-06).
+    # 100% match with season derived from PreferredMonth:
+    #   Automne=mois 9/10/11 -> 1.9% churn (active customers near snapshot)
+    #   Hiver=mois 12/1/2    -> 51.8% churn
+    #   Printemps=mois 3/4/5 -> 61.3% churn
+    #   Ete=mois 6/7/8       -> 50.4% churn
+    # FavoriteSeason is a bijective recode of PreferredMonth.
+    # Both encode snapshot date of last purchase, not genuine preference.
+    # Was responsible for 58% of model feature importance -> artificial signal.
+    "FavoriteSeason",
+    # SpendingCategory: CONFIRMED leakage (diagnostic 2026-05-06).
+    # Perfect clean-cut discretisation of MonetaryTotal with zero overlap:
+    #   Low    : MonetaryTotal < £100
+    #   Medium : £100 <= MonetaryTotal < £500
+    #   High   : £500 <= MonetaryTotal < £2001
+    #   VIP    : MonetaryTotal >= £2001
+    # Responsible for 70% of regression feature importance -> pure leakage.
+    # Also correlates directly with Churn (Low=66%, Medium=51%, High=25%, VIP=7%)
+    # because MonetaryTotal itself is a strong churn predictor.
+    # Both classification and regression models must not use SpendingCategory.
+    "SpendingCategory",
+    # BasketSizeCategory: same risk — likely derived from AvgBasketValue or
+    # MonetaryTotal/Frequency. Drop to be safe; it encodes monetary behaviour
+    # already captured by the raw numeric columns.
+    "BasketSizeCategory",
 ]
 
 df = df.drop(columns=columns_to_drop, errors="ignore")
@@ -185,20 +231,15 @@ if "IsPrivateIP" in df.columns:
 
 print("Applying ordinal encoding...")
 
-if "SpendingCategory" in df.columns:
-    df["SpendingCategory"] = df["SpendingCategory"].map(
-        {"Low": 0, "Medium": 1, "High": 2, "VIP": 3}
-    )
+# SpendingCategory and BasketSizeCategory REMOVED from ordinal encoding —
+# both dropped as leaky (confirmed 2026-05-06 diagnostic).
+# SpendingCategory is a clean-cut discretisation of MonetaryTotal.
+# BasketSizeCategory encodes AvgBasketValue or MonetaryTotal/Frequency.
 
 if "AgeCategory" in df.columns:
     df["AgeCategory"] = df["AgeCategory"].map(
         {"18-24": 0, "25-34": 1, "35-44": 2, "45-54": 3, "55-64": 4, "65+": 5}
     )   # "Inconnu" → NaN, imputed post-split
-
-if "BasketSizeCategory" in df.columns:
-    df["BasketSizeCategory"] = df["BasketSizeCategory"].map(
-        {"Petit": 0, "Moyen": 1, "Grand": 2, "Inconnu": 3}
-    )
 
 if "PreferredTimeOfDay" in df.columns:
     df["PreferredTimeOfDay"] = df["PreferredTimeOfDay"].map(
@@ -213,6 +254,7 @@ print("  ✅ Ordinal encoding complete")
 # ==========================================
 # Country excluded here — gets smoothed Target Encoding post-split (step 10)
 # because it has 37+ unique values with many rare categories.
+# WeekendPreference is confirmed object dtype → handled correctly by get_dummies.
 # ==========================================
 
 print("Applying one-hot encoding (Country excluded → Target Encoding)...")
@@ -275,22 +317,15 @@ print(f"  Churn rate — train: {y_train.mean():.2%} | test: {y_test.mean():.2%}
 # ==========================================
 # 🔟 TARGET ENCODING — Country (post-split, smoothed)
 # ==========================================
-# ✅ FIX 1: Hardened groupby — uses .values to strip index, preventing
-#    silent bugs when indices are non-contiguous or reset elsewhere.
-#
-# ✅ FIX 2: Smoothing (k=10) prevents rare-country memorization.
-#    Without smoothing, countries with n=1 churned customer encode as 1.0
-#    (e.g. Bahrain, Canada, Brazil — all showed 1.000 in previous run).
-#    Formula: smoothed = (n * country_mean + k * global_mean) / (n + k)
-#    At n=1,  k=10: smoothed ≈ 0.39 instead of 1.0  (pulled toward global)
-#    At n=10, k=10: smoothed = average of country and global mean
-#    At n=100,k=10: smoothed ≈ country_mean           (large sample trusted)
+# FIX: Hardened groupby — uses .values to strip index, preventing
+# silent bugs when indices are non-contiguous or reset elsewhere.
+# Smoothing (k=10) prevents rare-country memorization.
+# Formula: smoothed = (n * country_mean + k * global_mean) / (n + k)
 # ==========================================
 
 print("Applying Target Encoding to Country (fit on train only, smoothed k=10)...")
 
 if "Country" in X_train.columns:
-    # Build temporary DataFrame using .values — index-safe
     _train_df = pd.DataFrame({
         "Country": X_train["Country"].values,
         "Churn":   y_train.values
@@ -299,7 +334,6 @@ if "Country" in X_train.columns:
 
     country_stats = _train_df.groupby("Country")["Churn"].agg(["mean", "count"])
 
-    # Smoothing factor k: at n=k, weight is 50/50 between country and global mean
     k = 10
     country_stats["smoothed"] = (
         (country_stats["count"] * country_stats["mean"] + k * global_churn_rate)
@@ -376,8 +410,8 @@ if "SupportTicketsCount" in X_train.columns:
 else:
     support_median = None
 
-# RegMonth / RegDay / RegWeekday — impute with train median
-for col in ["RegMonth", "RegDay", "RegWeekday"]:
+# RegYear / RegMonth / RegDay / RegWeekday — impute with train median
+for col in ["RegYear", "RegMonth", "RegDay", "RegWeekday"]:
     if col in X_train.columns:
         med = X_train[col].median()
         X_train[col] = X_train[col].fillna(med)
@@ -393,10 +427,15 @@ if "IsPrivateIP" in X_train.columns:
 # ==========================================
 # 1️⃣2️⃣ FEATURE ENGINEERING (Post-split)
 # ==========================================
+# ORDER MATTERS:
+#   AvgBasketValue must be computed on raw MonetaryTotal BEFORE
+#   log-transforms are applied (step 13). This ensures the ratio
+#   is computed on the original scale, then log-transformed consistently.
+# ==========================================
 
 print("Engineering new features...")
 
-# AvgBasketValue (Recency-free)
+# AvgBasketValue — computed BEFORE log-transforms (see note above)
 if "MonetaryTotal" in X_train.columns and "Frequency" in X_train.columns:
     X_train["AvgBasketValue"] = X_train["MonetaryTotal"] / (X_train["Frequency"] + 1)
     X_test["AvgBasketValue"]  = X_test["MonetaryTotal"]  / (X_test["Frequency"]  + 1)
@@ -406,10 +445,24 @@ if "Frequency" in X_train.columns and "CustomerTenureDays" in X_train.columns:
     X_train["EngagementScore"] = X_train["Frequency"] / (X_train["CustomerTenureDays"] + 1)
     X_test["EngagementScore"]  = X_test["Frequency"]  / (X_test["CustomerTenureDays"]  + 1)
 
-# DisengagementScore (Recency-free)
+# DisengagementScore — FIX v3: normalise each component before combining
+# Previous formula used arbitrary /10 divisor for CancelledTransactions,
+# which caused skewed CancelledTransactions to dominate the score.
+# Fix: use z-score normalisation of each component on train statistics.
 if "ReturnRatio" in X_train.columns and "CancelledTransactions" in X_train.columns:
-    X_train["DisengagementScore"] = X_train["ReturnRatio"] + (X_train["CancelledTransactions"] / 10)
-    X_test["DisengagementScore"]  = X_test["ReturnRatio"]  + (X_test["CancelledTransactions"]  / 10)
+    rr_mean  = X_train["ReturnRatio"].mean()
+    rr_std   = X_train["ReturnRatio"].std() + 1e-8
+    ct_mean  = X_train["CancelledTransactions"].mean()
+    ct_std   = X_train["CancelledTransactions"].std() + 1e-8
+
+    X_train["DisengagementScore"] = (
+        (X_train["ReturnRatio"] - rr_mean) / rr_std
+        + (X_train["CancelledTransactions"] - ct_mean) / ct_std
+    )
+    X_test["DisengagementScore"] = (
+        (X_test["ReturnRatio"] - rr_mean) / rr_std
+        + (X_test["CancelledTransactions"] - ct_mean) / ct_std
+    )
 
 # RevenueIndex (global_mean from train only)
 if "MonetaryTotal" in X_train.columns:
@@ -426,16 +479,45 @@ print(f"  Shape after feature engineering — train: {X_train.shape} | test: {X_
 # ==========================================
 # 1️⃣3️⃣ LOG TRANSFORMATIONS
 # ==========================================
+# FIX v3: Extended to ALL high-skew columns detected in EDA (|skew| > 1).
+# Previous version only log-transformed 3 columns, leaving 20+ skewed
+# features that StandardScaler cannot correct.
+# sign * log1p(|x|) handles negative values safely (e.g. MonetaryMin).
+# ==========================================
 
 print("Applying log transformations...")
-log_cols = ["MonetaryTotal", "Frequency", "AvgBasketValue"]
 
+log_cols = [
+    # Original 3
+    "MonetaryTotal",
+    "Frequency",
+    "AvgBasketValue",
+    # FIX v3: Added from EDA high-skew list
+    "CancelledTransactions",
+    "SupportTicketsCount",
+    "ReturnRatio",
+    "AvgDaysBetweenPurchases",
+    "ZeroPriceCount",
+    "UniqueCountries",
+    "AvgProductsPerTransaction",
+    "MonetaryAvg",
+    "WeekendPurchaseRatio",
+    "MonetaryMax",
+    "EngagementScore",
+    "RevenueIndex",
+    # AvgQuantityPerTransaction: max=12540 vs Q75=14 (317x above 3xIQR fence).
+    # Outliers dominate tree splits → 27% artificial regression importance
+    # despite corr=0.031 with MonetaryTotal. Log-transform neutralises this.
+    "AvgQuantityPerTransaction",
+]
 
 for col in log_cols:
     if col in X_train.columns:
         X_train[col] = np.sign(X_train[col]) * np.log1p(np.abs(X_train[col]))
         X_test[col]  = np.sign(X_test[col])  * np.log1p(np.abs(X_test[col]))
         print(f"  ✅ log1p → {col}")
+    else:
+        print(f"  ⚠️  {col} not found — skipped")
 
 
 # ==========================================
@@ -484,7 +566,7 @@ print(f"  Final shape — train: {X_train.shape} | test: {X_test.shape}")
 # Produces a second dataset variant: X_train_pca / X_test_pca
 # training.py will compare models on both raw-scaled and PCA-reduced features.
 # PCA fit on X_train ONLY → transform applied to X_test.
-# SMOTE lives inside the CV pipeline in training.py.
+# SMOTE / class_weight handled in training.py.
 # ==========================================
 
 print("\nRunning PCA (95% variance threshold)...")
@@ -557,7 +639,7 @@ except Exception as e:
 
 
 # ==========================================
-# ⛔ NO SMOTE HERE — lives in training.py ImbPipeline
+# ⛔ NO SMOTE HERE — lives in training.py (class_weight="balanced")
 # ==========================================
 
 print(f"\n  Class distribution (NO SMOTE):")
@@ -603,6 +685,11 @@ imputation_stats = {
     "country_encoding"    : country_encoding,
     "pca_numeric_cols"    : pca_numeric,
     "pca_n_components"    : n_components,
+    # DisengagementScore normalisation stats (needed for inference)
+    "disengagement_rr_mean" : rr_mean  if "ReturnRatio" in X_train.columns else None,
+    "disengagement_rr_std"  : rr_std   if "ReturnRatio" in X_train.columns else None,
+    "disengagement_ct_mean" : ct_mean  if "CancelledTransactions" in X_train.columns else None,
+    "disengagement_ct_std"  : ct_std   if "CancelledTransactions" in X_train.columns else None,
 }
 joblib.dump(imputation_stats, "models/imputation_stats.pkl")
 

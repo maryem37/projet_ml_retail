@@ -1,203 +1,282 @@
 
-# Retail ML Project
+# Retail ML Project — Customer Segmentation, Churn & Revenue Forecasting
 
-A machine learning pipeline for retail customer analysis, segmentation, and churn prediction, featuring data preprocessing, clustering, classification, monitoring, and a Flask web app for predictions.
+End-to-end machine learning project for retail customer intelligence:
 
-## Table of Contents
+- **Preprocessing** (feature engineering, encoding, scaling, PCA)
+- **Customer segmentation** (K-Means)
+- **Churn prediction** (calibrated classifier + tuned decision threshold)
+- **Revenue forecasting** (regression on MonetaryTotal with outlier handling)
+- **Monitoring & drift detection** (Evidently when available, fallback otherwise)
+- **Flask web app** for interactive churn + revenue predictions
 
-- [Project Overview](#project-overview)
-- [Project Structure](#project-structure)
+> Note: This repository contains a ready-to-run pipeline driven by [main.py](main.py). Most scripts currently read/write from the project folders directly (e.g. `data/train_test`, `models`, `reports`).
+
+## Table of contents
+
+- [Quickstart](#quickstart)
+- [Project structure](#project-structure)
 - [Setup](#setup)
-- [Usage](#usage)
-- [Pipeline Steps](#pipeline-steps)
-- [Web Application](#web-application)
-- [Requirements](#requirements)
-- [Contributing](#contributing)
-- [License](#license)
+- [Run the pipeline](#run-the-pipeline)
+    - [Run specific steps](#run-specific-steps)
+    - [Monitoring](#monitoring)
+    - [Run the demo predictor](#run-the-demo-predictor)
+- [Flask web app](#flask-web-app)
+- [Artifacts (what gets saved)](#artifacts-what-gets-saved)
+- [Configuration](#configuration)
+- [Notebooks & reports](#notebooks--reports)
+- [Troubleshooting](#troubleshooting)
 
-## Project Overview
+## Quickstart
 
-This repository provides a full ML workflow for retail data, including:
-- Data preprocessing and cleaning
-- Customer segmentation using K-Means clustering
-- Churn prediction with classification models
-- Model monitoring and drift detection
-- Interactive Flask web app for predictions
+```bash
+python -m venv venv
 
-## Project Structure
+# Windows PowerShell
+venv\Scripts\Activate.ps1
 
-- `data/` — Raw, processed, and train/test datasets
-- `src/` — Source code for preprocessing, clustering, training, prediction, monitoring, and utilities
-- `app/` — Flask web application and HTML templates
-- `notebooks/` — Jupyter notebooks for EDA and reporting
-- `models/` — Saved models and artifacts
-- `logs/` — Log files
-- `reports/` — Generated reports and summaries
-- `requirements.txt` — Python dependencies
-- `main.py` — Pipeline runner script
+pip install -r requirements.txt
+
+# Run the core pipeline (preprocessing + classification)
+python main.py
+
+# Launch the web app (requires trained artifacts in models/)
+python app/app.py
+```
+
+Open: http://localhost:5000
+
+## Project structure
+
+```
+.
+├── app/                       # Flask app + HTML template
+│   ├── app.py
+│   └── templates/
+│       └── index.html
+├── config.yaml                # Central config (logging, defaults, metadata)
+├── data/
+│   ├── raw/                   # Input CSV
+│   ├── processed/             # Optional outputs (e.g., cluster labels)
+│   └── train_test/            # Saved train/test splits (raw + PCA)
+├── logs/                      # Pipeline logs
+├── models/                    # Serialized artifacts (joblib)
+├── notebooks/                 # EDA notebooks
+├── reports/                   # Plots, metrics, HTML monitoring reports
+├── src/                       # Pipeline scripts
+│   ├── preprocessing.py
+│   ├── train_model.py
+│   ├── clustering.py
+│   ├── regression.py
+│   ├── predict.py
+│   ├── monitoring.py
+│   └── utils.py
+├── main.py                    # Pipeline runner (step orchestrator)
+└── requirements.txt
+```
 
 ## Setup
 
-1. **Clone the repository:**
-    ```bash
-    git clone https://github.com/yourusername/projet_ml_retail.git
-    cd projet_ml_retail
-    ```
-2. **Create and activate a virtual environment (recommended):**
-    ```bash
-    python -m venv venv
+### Requirements
 
-    # Retail ML Project
+- Python **3.10+** recommended
+- Windows / macOS / Linux
 
-    Un pipeline complet de machine learning pour l’analyse, la segmentation et la prédiction de churn des clients du secteur retail. Ce projet inclut le prétraitement des données, le clustering, la classification, le monitoring, ainsi qu’une application web Flask pour des prédictions interactives.
+### Install
 
-    ---
+```bash
+python -m venv venv
 
-    ## Table des matières
+# Windows PowerShell
+venv\Scripts\Activate.ps1
 
-    - [Présentation du projet](#présentation-du-projet)
-    - [Structure du projet](#structure-du-projet)
-    - [Installation](#installation)
-    - [Utilisation](#utilisation)
-      - [Exécution du pipeline](#exécution-du-pipeline)
-      - [Application web](#application-web)
-    - [Étapes du pipeline](#étapes-du-pipeline)
-    - [Dépendances](#dépendances)
-    - [Contribuer](#contribuer)
-    - [Licence](#licence)
+# Windows cmd.exe
+venv\Scripts\activate.bat
 
-    ---
+pip install -r requirements.txt
+```
 
-    ## Présentation du projet
+### Input data
 
-    Ce dépôt propose un workflow ML complet pour la donnée retail, incluant :
+By default the preprocessing step reads:
 
-    - Prétraitement et nettoyage des données
-    - Segmentation client par clustering K-Means
-    - Prédiction du churn par modèles de classification
-    - Monitoring du modèle et détection de dérive
-    - Application web Flask interactive pour la prédiction
+- `data/raw/retail_customers_COMPLETE_CATEGORICAL.csv`
 
-    ---
+If you replace the dataset, keep the same feature columns (or update the scripts accordingly).
 
-    ## Structure du projet
+## Run the pipeline
 
-    ```
-    .
-    ├── app/
-    │   ├── app.py
-    │   └── templates/
-    │       └── index.html
-    ├── config.yaml
-    ├── data/
-    │   ├── processed/
-    │   ├── raw/
-    │   └── train_test/
-    ├── logs/
-    ├── main.py
-    ├── models/
-    ├── notebooks/
-    │   ├── 01_EDA.ipynb
-    │   ├── EDA_Churn_Exploration.ipynb
-    │   └── reports/
-    ├── reports/
-    ├── requirements.txt
-    ├── src/
-    │   ├── clustering.py
-    │   ├── config_loader.py
-    │   ├── find_leaky_features.py
-    │   ├── monitoring.py
-    │   ├── predict.py
-    │   ├── preprocessing.py
-    │   ├── train_model.py
-    │   └── utils.py
-    └── tools/
-    ```
+The pipeline runner is [main.py](main.py). It can run everything or selected steps.
 
-    ---
+### Full run (recommended)
 
-    ## Installation
+```bash
+python main.py
+```
 
-    1. **Cloner le dépôt :**
-        ```bash
-        git clone https://github.com/yourusername/projet_ml_retail.git
-        cd projet_ml_retail
-        ```
+Default step sequence:
 
-    2. **Créer et activer un environnement virtuel (recommandé) :**
-        ```bash
-        python -m venv venv
-        # Sous Windows :
-        venv\Scripts\activate
-        # Sous Unix/Mac :
-        source venv/bin/activate
-        ```
+1. Preprocessing → `src/preprocessing.py`
+2. Clustering (optional) → `src/clustering.py`
+3. Classification (churn) → `src/train_model.py`
+4. Regression (optional) → `src/regression.py`
+5. Tests (optional) → `pytest tests/`
+6. Monitoring (optional) → `src/monitoring.py`
+7. Predict demo (optional) → `src/predict.py`
+8. Flask app (optional) → `app/app.py`
 
-    3. **Installer les dépendances :**
-        ```bash
-        pip install -r requirements.txt
-        ```
+### Run specific steps
 
-    ---
+Use `--steps` with numeric step IDs:
 
-    ## Utilisation
+```bash
+# preprocessing + classification only
+python main.py --steps 1,3
 
-    ### Exécution du pipeline
+# clustering + churn training + revenue regression
+python main.py --steps 2,3,4
+```
 
-    Lancer le pipeline principal :
-    ```bash
-    python main.py
-    ```
+Useful flags:
+
+```bash
+python main.py --no-flask          # skip Flask app step
+python main.py --no-regression     # skip regression step
+python main.py --monitor           # include monitoring step
+python main.py --test              # include pytest step (requires a tests/ folder)
+python main.py --skip-on-fail      # continue even if a required step fails
+```
+
+### Monitoring
+
+```bash
+python src/monitoring.py
+```
+
+Monitoring tries to use **Evidently** to generate HTML reports. If Evidently is not installed, the script falls back to a simplified KS-test drift report.
+
+Optional install:
+
+```bash
+pip install evidently
+```
+
+To simulate “production” drift, place:
+
+- `data/production/new_customers.csv`
+- `data/production/new_customers_labels.csv`
+
+### Run the demo predictor
+
+After training (and generating artifacts in `models/`), you can run:
+
+```bash
+python src/predict.py
+```
+
+This script loads `models/churn_model.pkl` + preprocessing artifacts, applies the tuned threshold from `models/threshold.pkl`, and prints prediction details.
+
+## Flask web app
+
+The app is in [app/app.py](app/app.py) and serves the UI in `app/templates/index.html`.
+
+### Start the server
+
+```bash
+python app/app.py
+```
+
+Then open: http://localhost:5000
+
+> The app expects trained artifacts in `models/`. Run `python main.py` first.
+
+### API endpoints
+
+- `GET /` → HTML UI
+- `POST /predict` → churn prediction (probability + decision)
+- `POST /predict_revenue` → revenue forecast (requires `models/regression_model.pkl`)
+- `POST /debug` → returns a trace of the preprocessing/prediction path
+
+Example request:
+
+```bash
+curl -X POST http://localhost:5000/predict \
+    -H "Content-Type: application/json" \
+    -d "{\"tenure\":365,\"frequency\":5,\"monetary\":350,\"spending_cat\":\"Medium\",\"season\":\"Automne\"}"
+```
+
+## Artifacts (what gets saved)
+
+After a successful run, you should see the following artifacts:
+
+### Classification (churn)
+
+- `models/scaler.pkl` — StandardScaler fitted on training data
+- `models/pca.pkl` — PCA transformer (used when PCA wins)
+- `models/imputation_stats.pkl` — medians/means + country target encoding map
+- `models/churn_model.pkl` — trained **CalibratedClassifierCV** pipeline
+- `models/threshold.pkl` — tuned decision threshold + metadata (`use_pca`, etc.)
+
+### Clustering
+
+- `models/kmeans_model.pkl` — trained KMeans
+- `reports/elbow_curve.png`, `reports/silhouette_scores.png`, etc.
+
+### Regression (revenue)
+
+- `models/regression_model.pkl` — dict artifact with `pipeline`, metrics and metadata
+- `reports/regression_metrics.csv`, `reports/regression_target_distribution.png`, etc.
+
+## Configuration
+
+Project-wide settings are stored in [config.yaml](config.yaml).
+
+Currently used by:
+
+- `src/config_loader.py` for robust YAML loading (encoding fallbacks)
+- `src/monitoring.py` for logging configuration (`logs/pipeline.log`, level/format)
+
+Some scripts still use hard-coded paths (e.g. `data/train_test/*.csv`). If you want everything driven by `config.yaml`, the next step is to route file paths through `src/config_loader.py` across the pipeline.
+
+## Notebooks & reports
+
+- Notebooks live in `notebooks/` (EDA and exploration)
+- Most scripts generate plots/CSVs into `reports/`
+- Monitoring can generate HTML:
+    - `reports/monitoring_report.html`
+    - `reports/drift_report.html`
+
+## Troubleshooting
+
+### “File not found” in `models/`
+
+Run the pipeline first:
+
+```bash
+python main.py --steps 1,3
+```
+
+The Flask app and prediction scripts expect `models/churn_model.pkl`, `models/scaler.pkl`, `models/pca.pkl`, `models/imputation_stats.pkl`, and `models/threshold.pkl`.
+
+### PowerShell cannot activate venv
+
+If PowerShell blocks scripts, run once (as admin) and reopen PowerShell:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+### Monitoring reports not generated
+
+Install Evidently (optional):
+
+```bash
+pip install evidently
+```
 
 ---
 
-### Exécution d'une partie spécifique du projet et ordre personnalisé
-
-Vous pouvez exécuter une ou plusieurs parties du pipeline en précisant l'étape ou la séquence d'étapes à lancer. Utilisez le script suivant (à créer si besoin) :
-
-```bash
-python run_part.py --steps preprocessing,clustering,predict
-```
-
-où `--steps` accepte une ou plusieurs étapes séparées par des virgules :
-
-- `preprocessing` : Prétraitement des données
-- `clustering`    : Segmentation/Clustering
-- `regression`    : Régression
-- `train_model`   : Entraînement du modèle
-- `predict`       : Prédiction
-- `monitoring`    : Monitoring
-
-Exemples :
-
-Exécuter uniquement le prétraitement :
-```bash
-python run_part.py --steps preprocessing
-```
-
-Exécuter clustering puis prédiction :
-```bash
-python run_part.py --steps clustering,predict
-```
-
-Vous pouvez ainsi donner l’ordre exact d’exécution selon vos besoins.
-
----
-
-### Running a specific part of the pipeline (English)
-
-You can run one or several pipeline steps in a custom order using:
-
-```bash
-python run_part.py --steps preprocessing,clustering,predict
-```
-
-Where `--steps` can be any of:
-
-- `preprocessing` : Data preprocessing
-- `clustering`    : Clustering/Segmentation
-- `regression`    : Regression
-- `train_model`   : Model training
+If you want, tell me whether you prefer the README in **English only** or **bilingual (EN/FR)**, and I can adapt the wording and sections accordingly.
 - `predict`       : Prediction
 - `monitoring`    : Monitoring
 

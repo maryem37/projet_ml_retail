@@ -3,19 +3,29 @@
 # ==========================================
 # UPDATED to match preprocessing_v3.py:
 #   ✅ RegistrationDate parsing → RegYear/RegMonth/RegDay/RegWeekday
-#   ✅ LastLoginIP → IsPrivateIP + IPClass (not dropped raw)
+#   ✅ LastLoginIP → IsPrivateIP + IPClass
 #   ✅ Country → Target Encoding (not OHE)
 #   ✅ PCA applied if training used PCA (auto-detected from threshold.pkl)
 #   ✅ Full calibrated pipeline used for predict_proba
 #   ✅ Tuned threshold applied
 #   ✅ OHE replaced with hardcoded category dict — safe for single-row inference
-#      (pd.get_dummies on 1 row cannot know all training categories → wrong columns)
+#
+# FIXES in this version (v2) — synchronized with preprocessing_v3.py:
+#   ✅ RegYear now extracted in _parse_registration_date
+#      (was silently skipped — missing column zero-filled → biased predictions)
+#   ✅ DisengagementScore uses z-score normalisation with train stats
+#      loaded from imputation_stats.pkl (replaces arbitrary /10 divisor)
+#   ✅ _log_transform extended to all 15 high-skew columns matching
+#      preprocessing_v3.py (was only 3 columns — silent feature mismatch)
+#   ✅ AvgBasketValue computed BEFORE log-transforms (order preserved)
+#   ✅ columns_to_drop updated: MultiCollinearity drops included
 # ==========================================
 
 import pandas as pd
 import numpy as np
 import joblib
 import os
+import warnings
 import ipaddress
 
 os.makedirs("reports", exist_ok=True)
@@ -27,7 +37,7 @@ os.makedirs("reports", exist_ok=True)
 
 print("Loading model artifacts...")
 
-pipeline         = joblib.load("models/churn_model.pkl")  # CalibratedClassifierCV
+pipeline         = joblib.load("models/churn_model.pkl")   # CalibratedClassifierCV
 scaler           = joblib.load("models/scaler.pkl")
 pca              = joblib.load("models/pca.pkl")
 imputation_stats = joblib.load("models/imputation_stats.pkl")
@@ -42,6 +52,12 @@ country_encoding  = imputation_stats.get("country_encoding", {})
 country_churn_map = country_encoding.get("country_churn_map", {})
 global_churn_rate = country_encoding.get("global_churn_rate", 0.33)
 pca_numeric_cols  = imputation_stats.get("pca_numeric_cols", [])
+
+# DisengagementScore normalisation stats — FIX v2
+DISENG_RR_MEAN = imputation_stats.get("disengagement_rr_mean", 0.0)
+DISENG_RR_STD  = imputation_stats.get("disengagement_rr_std",  1.0)
+DISENG_CT_MEAN = imputation_stats.get("disengagement_ct_mean", 0.0)
+DISENG_CT_STD  = imputation_stats.get("disengagement_ct_std",  1.0)
 
 print(f"  ✅ churn_model.pkl      loaded  (CalibratedClassifierCV)")
 print(f"  ✅ scaler.pkl           loaded")
@@ -69,26 +85,18 @@ print(f"  ✅ Using: {'PCA features' if USE_PCA else 'Raw scaled features'}")
 # ==========================================
 # 3️⃣ OHE CATEGORY MAP
 # ==========================================
-# ✅ FIX: pd.get_dummies() on a single row cannot know all categories
-#    that existed during training. Missing dummies are silently absent,
-#    then zero-filled downstream — pushing model toward Fidèle (0.0% churn).
-#
-# Solution: hardcode all categories from training and manually create
-# the exact same binary columns that preprocessing_v3.py produced.
+# Inference-safe OHE: hardcoded training categories instead of pd.get_dummies().
+# pd.get_dummies() on a single row cannot infer all training categories —
+# missing dummies are silently absent, then zero-filled → biased toward Fidèle.
 #
 # Rules (must match preprocessing_v3.py exactly):
-#   - drop_first=True → the first category alphabetically is the reference
-#     and gets NO column (its signal = all other dummies = 0)
+#   - drop_first=True → first alphabetical category = reference (no column)
 #   - Column name format: "{original_col}_{category_value}"
-#
-# Columns OHE'd in training (from preprocessing log):
-#   FavoriteSeason, Region, WeekendPreference, ProductDiversity, Gender, AccountStatus
 # ==========================================
 
-# All unique values seen during training, sorted alphabetically.
-# The first value in each list is the reference category (dropped by drop_first=True).
 OHE_CATEGORIES = {
-    "FavoriteSeason"    : ["Automne", "Été", "Hiver", "Printemps"],
+    # FavoriteSeason REMOVED — confirmed leakage (bijective recode of PreferredMonth)
+    # Diagnostic 2026-05-06: Match rate 100%, churn rates 1.9%/51%/61%/50% by season
     "Region"            : ["Europe", "Overseas", "UK"],
     "WeekendPreference" : ["Semaine", "Weekend"],
     "ProductDiversity"  : ["Diversifié", "Modéré", "Spécialisé"],
@@ -96,13 +104,62 @@ OHE_CATEGORIES = {
     "AccountStatus"     : ["Active", "Inactive", "Suspended"],
 }
 
+# Columns dropped in preprocessing — silently ignored at inference
+COLUMNS_TO_DROP = [
+    "Recency", "CustomerType", "ChurnRiskCategory", "RFMSegment",
+    "LoyaltyLevel", "CustomerID", "NewsletterSubscribed", "UniqueInvoices",
+    "TotalTransactions", "UniqueDescriptions", "NegativeQuantityCount",
+    "FirstPurchaseDaysAgo", "SatisfactionScore",
+    "AvgLinesPerInvoice", "TotalQuantity", "MonetaryStd", "MonetaryMin",
+    "MinQuantity", "MaxQuantity",
+    "PreferredMonth",   # temporal leakage
+    "FavoriteSeason",   # CONFIRMED leakage — bijective recode of PreferredMonth (match=100%)
+    "SpendingCategory",  # CONFIRMED leakage — clean-cut discretisation of MonetaryTotal
+    "BasketSizeCategory",# CONFIRMED leakage — encodes AvgBasketValue/MonetaryTotal
+]
+
+# Log-transform columns — FIX v2: matches preprocessing_v3.py exactly (15 cols)
+LOG_COLS = [
+    "MonetaryTotal",
+    "Frequency",
+    "AvgBasketValue",            # computed before log-transforms (step 5)
+    "CancelledTransactions",
+    "SupportTicketsCount",
+    "ReturnRatio",
+    "AvgDaysBetweenPurchases",
+    "ZeroPriceCount",
+    "UniqueCountries",
+    "AvgProductsPerTransaction",
+    "MonetaryAvg",
+    "WeekendPurchaseRatio",
+    "MonetaryMax",
+    "EngagementScore",
+    "RevenueIndex",
+    # AvgQuantityPerTransaction: max=12540 vs Q75=14 (317x above fence)
+    # Log-transform neutralises outlier dominance in tree splits.
+    "AvgQuantityPerTransaction",
+]
+
 
 # ==========================================
 # 4️⃣ PREPROCESSING HELPERS
 # ==========================================
 
+def _drop_leaky_cols(df: pd.DataFrame) -> pd.DataFrame:
+    return df.drop(
+        columns=[c for c in COLUMNS_TO_DROP if c in df.columns],
+        errors="ignore"
+    )
+
+
 def _parse_registration_date(df: pd.DataFrame) -> pd.DataFrame:
-    """Extract RegYear/RegMonth/RegDay/RegWeekday from RegistrationDate."""
+    """
+    Extract RegYear / RegMonth / RegDay / RegWeekday from RegistrationDate.
+    FIX v2: RegYear is now extracted — preprocessing_v3.py includes it as
+    a feature (customer cohort signal). Omitting it caused silent zero-fill
+    and biased predictions toward Fidèle.
+    Fallback values = train medians (approximate).
+    """
     if "RegistrationDate" in df.columns:
         dates = pd.to_datetime(
             df["RegistrationDate"],
@@ -110,10 +167,7 @@ def _parse_registration_date(df: pd.DataFrame) -> pd.DataFrame:
             dayfirst=False,
             errors="coerce"
         )
-       # RegYear is NOT extracted — it was never part of the trained model
-        # (dropped in preprocessing due to perfect inverse correlation with
-        # CustomerTenureDays). Extracting it here would add a column that
-        # the scaler and model have never seen.
+        df["RegYear"]    = dates.dt.year.fillna(2010).astype(int)
         df["RegMonth"]   = dates.dt.month.fillna(6).astype(int)
         df["RegDay"]     = dates.dt.day.fillna(15).astype(int)
         df["RegWeekday"] = dates.dt.weekday.fillna(2).astype(int)
@@ -147,21 +201,14 @@ def _parse_last_login_ip(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _ordinal_encode(df: pd.DataFrame) -> pd.DataFrame:
-    """Ordinal encoding matching preprocessing_v3.py."""
-    if "SpendingCategory" in df.columns and df["SpendingCategory"].dtype == object:
-        df["SpendingCategory"] = df["SpendingCategory"].map(
-            {"Low": 0, "Medium": 1, "High": 2, "VIP": 3}
-        ).fillna(1)
+    """Ordinal encoding — must match preprocessing_v3.py exactly."""
+    # SpendingCategory removed — confirmed leakage (clean-cut of MonetaryTotal)
+    # BasketSizeCategory removed — confirmed leakage (encodes monetary behaviour)
 
     if "AgeCategory" in df.columns and df["AgeCategory"].dtype == object:
         df["AgeCategory"] = df["AgeCategory"].map(
             {"18-24": 0, "25-34": 1, "35-44": 2, "45-54": 3, "55-64": 4, "65+": 5}
         ).fillna(3)
-
-    if "BasketSizeCategory" in df.columns and df["BasketSizeCategory"].dtype == object:
-        df["BasketSizeCategory"] = df["BasketSizeCategory"].map(
-            {"Petit": 0, "Moyen": 1, "Grand": 2, "Inconnu": 3}
-        ).fillna(1)
 
     if "PreferredTimeOfDay" in df.columns and df["PreferredTimeOfDay"].dtype == object:
         df["PreferredTimeOfDay"] = df["PreferredTimeOfDay"].map(
@@ -173,18 +220,13 @@ def _ordinal_encode(df: pd.DataFrame) -> pd.DataFrame:
 
 def _apply_ohe(df: pd.DataFrame) -> pd.DataFrame:
     """
-    ✅ FIX: Inference-safe OHE using hardcoded training categories.
-
-    For each OHE column, creates binary dummy columns matching exactly
-    what preprocessing_v3.py produced with pd.get_dummies(drop_first=True).
-
-    drop_first=True means the first alphabetical category is the reference
-    and gets NO column (all other dummies = 0 encodes the reference category).
+    Inference-safe OHE using hardcoded training categories.
+    drop_first=True: first alphabetical category = reference (no column created).
     """
     for col, categories in OHE_CATEGORIES.items():
         sorted_cats = sorted(categories)
-        ref_cat     = sorted_cats[0]          # reference — no column created
-        non_ref     = sorted_cats[1:]         # these get a binary column each
+        ref_cat     = sorted_cats[0]     # reference — no column
+        non_ref     = sorted_cats[1:]    # these get a binary column each
 
         val = str(df[col].iloc[0]) if col in df.columns else ref_cat
 
@@ -213,7 +255,7 @@ def _target_encode_country(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _impute(df: pd.DataFrame) -> pd.DataFrame:
-    """Impute missing values using train statistics."""
+    """Impute missing values using train statistics from imputation_stats.pkl."""
     stats = imputation_stats
 
     if "Age" in df.columns:
@@ -228,33 +270,55 @@ def _impute(df: pd.DataFrame) -> pd.DataFrame:
 
     if "SupportTicketsCount" in df.columns:
         df["SupportTicketsCount"] = (
-            df["SupportTicketsCount"].replace([-1, 999], np.nan)
+            df["SupportTicketsCount"]
+            .replace([-1, 999], np.nan)
             .fillna(stats.get("support_median", 2))
         )
+
+    for col in ["RegYear", "RegMonth", "RegDay", "RegWeekday"]:
+        if col in df.columns:
+            med = stats.get("train_medians", {}).get(col, None)
+            if med is not None:
+                df[col] = df[col].fillna(med)
+
+    if "IsPrivateIP" in df.columns:
+        df["IsPrivateIP"] = df["IsPrivateIP"].replace(-1, np.nan).fillna(0)
 
     return df
 
 
 def _engineer_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Feature engineering matching preprocessing_v3.py."""
+    """
+    Feature engineering — must match preprocessing_v3.py exactly.
+    ORDER MATTERS: AvgBasketValue is computed BEFORE log-transforms.
+
+    FIX v2: DisengagementScore now uses z-score normalisation with train
+    statistics loaded from imputation_stats.pkl. Previous formula used
+    an arbitrary /10 divisor that caused CancelledTransactions to dominate.
+    """
+    # AvgBasketValue — computed BEFORE log-transforms (preprocessing order)
     if "MonetaryTotal" in df.columns and "Frequency" in df.columns:
         df["AvgBasketValue"] = df["MonetaryTotal"] / (df["Frequency"] + 1)
     else:
         missing = [c for c in ["MonetaryTotal", "Frequency"] if c not in df.columns]
-        import warnings
         warnings.warn(
-            f"Cannot compute AvgBasketValue — missing input columns: {missing}. "
-            f"Defaulting to 0.0. The prediction may be unreliable.",
-            UserWarning,
-            stacklevel=2,
+            f"Cannot compute AvgBasketValue — missing: {missing}. Defaulting to 0.0.",
+            UserWarning, stacklevel=2,
         )
         df["AvgBasketValue"] = 0.0
+
+    # EngagementScore
     if "Frequency" in df.columns and "CustomerTenureDays" in df.columns:
         df["EngagementScore"] = df["Frequency"] / (df["CustomerTenureDays"] + 1)
 
+    # DisengagementScore — FIX v2: z-score normalisation with train stats
     if "ReturnRatio" in df.columns and "CancelledTransactions" in df.columns:
-        df["DisengagementScore"] = df["ReturnRatio"] + (df["CancelledTransactions"] / 10)
+        df["DisengagementScore"] = (
+            (df["ReturnRatio"]           - DISENG_RR_MEAN) / DISENG_RR_STD
+            + (df["CancelledTransactions"] - DISENG_CT_MEAN) / DISENG_CT_STD
+        )
 
+    # RevenueIndex
     if "MonetaryTotal" in df.columns:
         gm = imputation_stats.get("global_mean_monetary", 1908.19)
         df["RevenueIndex"] = df["MonetaryTotal"] / (gm + 1)
@@ -263,7 +327,12 @@ def _engineer_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _log_transform(df: pd.DataFrame) -> pd.DataFrame:
-    for col in ["MonetaryTotal", "Frequency", "AvgBasketValue"]:
+    """
+    FIX v2: Extended from 3 → 15 columns to match preprocessing_v3.py.
+    All columns in LOG_COLS are sign-preserved log1p transformed.
+    Columns absent from df are silently skipped (guard via `if col in df.columns`).
+    """
+    for col in LOG_COLS:
         if col in df.columns:
             df[col] = np.sign(df[col]) * np.log1p(np.abs(df[col]))
     return df
@@ -272,54 +341,46 @@ def _log_transform(df: pd.DataFrame) -> pd.DataFrame:
 def _preprocess_input(df: pd.DataFrame) -> pd.DataFrame:
     """
     Full inference preprocessing pipeline.
-    Mirrors preprocessing_v3.py exactly.
+    Mirrors preprocessing_v3.py step by step.
     """
     df = df.copy()
 
-    # Drop leaky, redundant, and multicollinear columns if present
-    columns_to_drop = [
-        "Recency", "CustomerType", "ChurnRiskCategory", "RFMSegment",
-        "LoyaltyLevel", "CustomerID", "NewsletterSubscribed", "UniqueInvoices",
-        "TotalTransactions", "UniqueDescriptions", "NegativeQuantityCount",
-        "FirstPurchaseDaysAgo", "SatisfactionScore", "AvgLinesPerInvoice",
-        "TotalQuantity", "MonetaryStd", "MonetaryMin", "MinQuantity", "MaxQuantity",
-        # RegYear: never extracted at inference — see _parse_registration_date
-        # PreferredMonth: temporal leakage — dropped from training features
-        "PreferredMonth",
-    ]
-    df = df.drop(columns=[c for c in columns_to_drop if c in df.columns], errors="ignore")
+    # Step 1: drop leaky / redundant / constant columns
+    df = _drop_leaky_cols(df)
 
-    # Parse date + IP
+    # Step 2: parse RegistrationDate → RegYear/RegMonth/RegDay/RegWeekday
     df = _parse_registration_date(df)
+
+    # Step 3: parse LastLoginIP → IsPrivateIP + IPClass
     df = _parse_last_login_ip(df)
 
-    # Sentinel cleanup
+    # Step 4: sentinel cleanup
     if "SupportTicketsCount" in df.columns:
         df["SupportTicketsCount"] = df["SupportTicketsCount"].replace([-1, 999], np.nan)
 
-    # Ordinal encode (before OHE — these become numeric)
+    # Step 5: ordinal encoding
     df = _ordinal_encode(df)
 
-    # ✅ FIX: inference-safe OHE — no pd.get_dummies()
-    #    Extract Country before OHE so it doesn't get dropped
+    # Step 6: OHE (inference-safe, hardcoded categories)
+    # Extract Country before OHE so it isn't dropped by _apply_ohe
     country_col = df.pop("Country") if "Country" in df.columns else None
     df = _apply_ohe(df)
     if country_col is not None:
         df["Country"] = country_col
 
-    # Target encode Country
+    # Step 7: target encode Country
     df = _target_encode_country(df)
 
-    # Impute
+    # Step 8: impute missing values with train statistics
     df = _impute(df)
 
-    # Feature engineering
+    # Step 9: feature engineering (AvgBasketValue BEFORE log-transforms)
     df = _engineer_features(df)
 
-    # Log transform
+    # Step 10: log-transform all 15 high-skew columns
     df = _log_transform(df)
 
-    # Align to scaler columns (fill any missing with 0)
+    # Step 11: align to scaler columns (fill missing with 0)
     missing_scaler = [c for c in scaler_columns if c not in df.columns]
     if missing_scaler:
         df = pd.concat(
@@ -327,12 +388,12 @@ def _preprocess_input(df: pd.DataFrame) -> pd.DataFrame:
             axis=1
         )
 
-    # Scale
+    # Step 12: scale
     cols_to_scale = [c for c in scaler_columns if c in df.columns]
-    df_scaled = df.copy()
+    df_scaled     = df.copy()
     df_scaled[cols_to_scale] = scaler.transform(df[cols_to_scale])
 
-    # PCA if model was trained on PCA features
+    # Step 13: PCA if model was trained on PCA features
     if USE_PCA:
         pca_input = df_scaled[[c for c in pca_numeric_cols if c in df_scaled.columns]]
         pca_arr   = pca.transform(pca_input)
@@ -341,7 +402,7 @@ def _preprocess_input(df: pd.DataFrame) -> pd.DataFrame:
     else:
         df_out = df_scaled
 
-    # Final column alignment to expected model input
+    # Step 14: final column alignment to expected model input
     missing_final = [c for c in expected_columns if c not in df_out.columns]
     if missing_final:
         df_out = pd.concat(
@@ -358,6 +419,10 @@ def _preprocess_input(df: pd.DataFrame) -> pd.DataFrame:
 # ==========================================
 
 def predict_churn(input_dict: dict) -> dict:
+    """
+    Predict churn probability for a single customer.
+    Returns label, probability, risk level, and threshold used.
+    """
     df          = pd.DataFrame([input_dict])
     df          = _preprocess_input(df)
     probability = float(pipeline.predict_proba(df)[0][1])
@@ -382,6 +447,10 @@ def predict_churn(input_dict: dict) -> dict:
 # ==========================================
 
 def predict_batch(csv_path: str, output_path: str = "reports/predictions.csv"):
+    """
+    Predict churn for all customers in a CSV file.
+    Saves results with probability, label, risk level, and threshold used.
+    """
     print(f"\nBatch prediction: {csv_path}")
     df_raw = pd.read_csv(csv_path)
     print(f"  Loaded {len(df_raw)} customers")
@@ -396,14 +465,14 @@ def predict_batch(csv_path: str, output_path: str = "reports/predictions.csv"):
     df_out["label"]          = np.where(predictions == 1, "Churn", "Fidèle")
     df_out["risk_level"]     = pd.cut(
         probabilities,
-        bins=[-np.inf, 0.25, 0.50, 0.75, np.inf],
-        labels=["Faible", "Moyen", "Élevé", "Critique"]
+        bins   = [-np.inf, 0.25, 0.50, 0.75, np.inf],
+        labels = ["Faible", "Moyen", "Élevé", "Critique"]
     )
     df_out["threshold_used"] = round(THRESHOLD, 3)
 
     df_out.to_csv(output_path, index=False)
     print(f"  ✅ Saved → {output_path}")
-    print(f"  Fidèle: {(predictions==0).sum()} | Churn: {(predictions==1).sum()}")
+    print(f"  Fidèle : {(predictions==0).sum()} | Churn : {(predictions==1).sum()}")
     return df_out
 
 
@@ -421,43 +490,35 @@ if __name__ == "__main__":
         # Core RFM (no Recency — dropped as leaky)
         "Frequency"                 : 8,
         "MonetaryTotal"             : 450.0,
-        "MonetaryAvg"               : 56.25,    # dropped in preprocessing — ignored
-        "MonetaryStd"               : 20.0,     # dropped in preprocessing — ignored
-        "MonetaryMin"               : 10.0,     # dropped in preprocessing — ignored
+        "MonetaryAvg"               : 56.25,
         "MonetaryMax"               : 120.0,
-        "TotalQuantity"             : 60,       # dropped in preprocessing — ignored
         "AvgQuantityPerTransaction" : 7.5,
-        "MinQuantity"               : 1,        # dropped in preprocessing — ignored
-        "MaxQuantity"               : 30,       # dropped in preprocessing — ignored
         # Tenure / dates
         "CustomerTenureDays"        : 365,
-        "FirstPurchaseDaysAgo"      : 400,      # dropped in preprocessing — ignored
-        "RegistrationDate"          : "15/06/2010",
+        "RegistrationDate"          : "15/06/2010",   # → RegYear/Month/Day/Weekday
         # Behaviour
         "PreferredDayOfWeek"        : 2,
         "PreferredHour"             : 14,
-        "PreferredMonth"            : 11,
         "WeekendPurchaseRatio"      : 0.25,
         "AvgDaysBetweenPurchases"   : 45,
         "UniqueProducts"            : 20,
         "AvgProductsPerTransaction" : 2.5,
         "UniqueCountries"           : 1,
+        "ZeroPriceCount"            : 0,
         "CancelledTransactions"     : 0,
         "ReturnRatio"               : 0.0,
-        "AvgLinesPerInvoice"        : 10.0,     # dropped in preprocessing — ignored
-        # IP (will be parsed)
+        # IP (parsed → IsPrivateIP + IPClass)
         "LastLoginIP"               : "85.244.30.10",
         # Demographics
         "Age"                       : 35,
         "SupportTicketsCount"       : 1,
-        "SatisfactionScore"         : 4,        # dropped in preprocessing — ignored
-        # Categorical — ordinal (handled by _ordinal_encode)
-        "SpendingCategory"          : "High",
+        # Categorical — ordinal
+        # "SpendingCategory" removed — confirmed leakage
         "AgeCategory"               : "35-44",
-        "BasketSizeCategory"        : "Moyen",
+        # "BasketSizeCategory" removed — confirmed leakage
         "PreferredTimeOfDay"        : "Après-midi",
-        # Categorical — OHE (handled by _apply_ohe with hardcoded categories)
-        "FavoriteSeason"            : "Hiver",
+        # Categorical — OHE (hardcoded inference-safe)
+        # "FavoriteSeason" removed — confirmed leakage, dropped in preprocessing
         "Region"                    : "UK",
         "WeekendPreference"         : "Semaine",
         "ProductDiversity"          : "Modéré",
@@ -474,8 +535,10 @@ if __name__ == "__main__":
     print(f"    Tenure     : {sample_customer['CustomerTenureDays']} days")
     print(f"    Monetary   : £{sample_customer['MonetaryTotal']}")
     print(f"    Country    : {sample_customer['Country']}")
-    print(f"    RegDate    : {sample_customer['RegistrationDate']} (parsed automatically)")
-    print(f"    IP         : {sample_customer['LastLoginIP']} (IsPrivate/Class extracted)")
+    print(f"    RegDate    : {sample_customer['RegistrationDate']}"
+          f"  → RegYear/Month/Day/Weekday extracted")
+    print(f"    IP         : {sample_customer['LastLoginIP']}"
+          f"  → IsPrivateIP + IPClass extracted")
 
     print(f"\n  Prediction Result:")
     print(f"    Label       : {result['label']}")
@@ -483,3 +546,4 @@ if __name__ == "__main__":
     print(f"    Risk Level  : {result['risk_level']}")
     print(f"    Threshold   : {result['threshold']}")
     print(f"    Feature set : {FEATURE_NOTE}")
+    print(f"    Tuner       : {TUNER_USED}")
